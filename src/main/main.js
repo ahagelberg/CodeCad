@@ -172,47 +172,6 @@ function createMenu() {
       ]
     },
     {
-      label: 'Language',
-      submenu: [
-        {
-          label: 'JavaScript',
-          type: 'radio',
-          checked: true,
-          click: () => {
-            mainWindow.webContents.send('menu-switch-language', 'javascript');
-          }
-        },
-        {
-          label: 'TypeScript',
-          type: 'radio',
-          click: () => {
-            mainWindow.webContents.send('menu-switch-language', 'typescript');
-          }
-        },
-        {
-          label: 'OpenSCAD',
-          type: 'radio',
-          click: () => {
-            mainWindow.webContents.send('menu-switch-language', 'openscad');
-          }
-        }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' }
-      ]
-    },
-    {
       label: 'Settings',
       submenu: [
         {
@@ -246,10 +205,29 @@ function createMenu() {
   Menu.setApplicationMenu(menu);
 }
 
-// Disable hardware acceleration if GPU issues occur (must be before app.whenReady)
-if (process.argv.includes('--disable-gpu')) {
-  app.disableHardwareAcceleration();
+// Check GPU acceleration settings (must be before app.whenReady)
+async function checkGPUAcceleration() {
+  try {
+    const configManager = getConfigManager();
+    const config = await configManager.get();
+    const enableGPU = config.performance?.enableGPUAcceleration ?? false;
+    
+    // Disable GPU acceleration if not enabled in config or if --disable-gpu flag is present
+    if (!enableGPU || process.argv.includes('--disable-gpu')) {
+      app.disableHardwareAcceleration();
+      console.log('GPU acceleration disabled');
+    } else {
+      console.log('GPU acceleration enabled');
+    }
+  } catch (error) {
+    console.error('Failed to load GPU acceleration config:', error);
+    // Default to disabled for safety
+    app.disableHardwareAcceleration();
+  }
 }
+
+// Check GPU settings before app is ready
+checkGPUAcceleration();
 
 // App event handlers
 app.whenReady().then(createWindow);

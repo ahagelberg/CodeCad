@@ -36,6 +36,11 @@ npm install
 npm run dev
 ```
 
+**Note**: GPU acceleration is disabled by default for stability. You can enable it in the Settings dialog (Advanced tab → Performance → 3D GPU acceleration) if your system supports it. If you experience GPU issues, use:
+```bash
+npm run dev-safe
+```
+
 ### Building
 
 Build the application:

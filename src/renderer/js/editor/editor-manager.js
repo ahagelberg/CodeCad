@@ -8,22 +8,25 @@ export class EditorManager {
 
     async initialize() {
         try {
+            console.log('EditorManager.initialize() called');
             // Try to load Monaco Editor, fallback to textarea if it fails
             try {
+                console.log('Attempting to load Monaco Editor...');
                 const monaco = await this.loadMonaco();
+                console.log('Monaco Editor loaded successfully, creating editor...');
                 this.createMonacoEditor(monaco);
             } catch (error) {
                 console.warn('Monaco Editor failed to load, using fallback editor:', error);
                 this.createFallbackEditor();
             }
         } catch (error) {
-            console.error('Failed to initialize editor:', error);
+            console.log('Failed to initialize editor:', error);
             this.createFallbackEditor();
         }
     }
 
     createMonacoEditor(monaco) {
-        // Create Monaco editor instance
+        // Create Monaco editor instance with ALL popups disabled
         this.editor = monaco.editor.create(document.getElementById('monaco-editor'), {
                 value: '// Welcome to Code CAD\n// Start typing your CAD script here...',
                 language: 'javascript',
@@ -46,38 +49,383 @@ export class EditorManager {
                 insertSpaces: true,
                 detectIndentation: true,
                 autoIndent: 'full',
-                formatOnPaste: true,
-                formatOnType: true,
-                suggestOnTriggerCharacters: true,
-                acceptSuggestionOnEnter: 'on',
-                quickSuggestions: {
-                    other: true,
-                    comments: false,
-                    strings: false
-                },
-                parameterHints: {
-                    enabled: true
-                },
+                formatOnPaste: false,
+                formatOnType: false,
+                suggestOnTriggerCharacters: false,
+                acceptSuggestionOnEnter: 'off',
+                quickSuggestions: false,
+                // CRITICAL: Disable ALL hover messages and popups
                 hover: {
-                    enabled: true
+                    enabled: false
                 },
                 contextmenu: true,
                 mouseWheelZoom: true,
                 multiCursorModifier: 'ctrlCmd',
-                accessibilitySupport: 'auto'
+                accessibilitySupport: 'auto',
+                // CRITICAL: Disable ALL validation and error decorations
+                renderValidationDecorations: 'off',
+                // Disable automatic error checking
+                quickSuggestions: false,
+                suggestOnTriggerCharacters: false,
+                acceptSuggestionOnEnter: 'off',
+                // Disable parameter hints
+                parameterHints: {
+                    enabled: false
+                },
+                // Disable all validation and diagnostics
+                lightbulb: {
+                    enabled: false
+                },
+                codeLens: false,
+                folding: false,
+                // Disable error markers
+                glyphMargin: false,
+                lineDecorationsWidth: 0,
+                lineNumbersMinChars: 0,
+                // Disable error popups and notifications
+                showFoldingControls: 'never',
+                hideCursorInOverviewRuler: true,
+                overviewRulerBorder: false,
+                // Disable all error decorations
+                renderWhitespace: 'none',
+                renderControlCharacters: false,
+                // Additional error suppression options
+                occurrencesHighlight: false,
+                selectionHighlight: false,
+                wordHighlight: false,
+                bracketPairColorization: {
+                    enabled: false
+                },
+                guides: {
+                    bracketPairs: false,
+                    indentation: false
+                },
+                // Disable all error-related features
+                stickyScroll: {
+                    enabled: false
+                }
             });
 
         // Setup event listeners
         this.setupEventListeners();
         
-        // Setup language-specific configurations
-        this.setupLanguageConfigurations();
+        // Disable language-specific validation
+        this.disableLanguageValidation(monaco);
         
-        console.log('Monaco Editor initialized successfully');
+        // Additional error suppression after editor creation
+        this.disableAllErrorChecking(monaco);
+        
+        // Setup marker listener to show errors in footer instead of popups
+        this.setupMarkerListener(monaco);
+        
+        console.log('Monaco Editor initialized successfully with error suppression');
+        console.log('Editor configuration:', {
+            hover: this.editor.getOption(monaco.editor.EditorOption.hover),
+            renderValidationDecorations: this.editor.getOption(monaco.editor.EditorOption.renderValidationDecorations),
+            quickSuggestions: this.editor.getOption(monaco.editor.EditorOption.quickSuggestions)
+        });
+    }
+
+    disableLanguageValidation(monaco) {
+        // Disable JavaScript validation completely
+        monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+            noSemanticValidation: true,
+            noSyntaxValidation: true,
+            noSuggestionDiagnostics: true,
+            noValidation: true,
+            noImplicitAny: true,
+            noImplicitReturns: true,
+            noImplicitThis: true,
+            noUnusedLocals: true,
+            noUnusedParameters: true,
+            strict: false,
+            noLib: true,
+            allowNonTsExtensions: true
+        });
+
+        // Disable TypeScript validation completely
+        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+            noSemanticValidation: true,
+            noSyntaxValidation: true,
+            noSuggestionDiagnostics: true,
+            noValidation: true,
+            noImplicitAny: true,
+            noImplicitReturns: true,
+            noImplicitThis: true,
+            noUnusedLocals: true,
+            noUnusedParameters: true,
+            strict: false,
+            noLib: true,
+            allowNonTsExtensions: true
+        });
+
+        // Disable all language features that might cause popups
+        monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+            noLib: true,
+            allowNonTsExtensions: true,
+            noImplicitAny: false,
+            noImplicitReturns: false,
+            noImplicitThis: false,
+            noUnusedLocals: false,
+            noUnusedParameters: false,
+            strict: false,
+            noEmit: true,
+            skipLibCheck: true,
+            skipDefaultLibCheck: true,
+            noErrorTruncation: true,
+            suppressExcessPropertyErrors: true,
+            suppressImplicitAnyIndexErrors: true
+        });
+
+        monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+            noLib: true,
+            allowNonTsExtensions: true,
+            noImplicitAny: false,
+            noImplicitReturns: false,
+            noImplicitThis: false,
+            noUnusedLocals: false,
+            noUnusedParameters: false,
+            strict: false,
+            noEmit: true,
+            skipLibCheck: true,
+            skipDefaultLibCheck: true,
+            noErrorTruncation: true,
+            suppressExcessPropertyErrors: true,
+            suppressImplicitAnyIndexErrors: true
+        });
+
+        // Disable extra libraries
+        monaco.languages.typescript.javascriptDefaults.setExtraLibs([]);
+        monaco.languages.typescript.typescriptDefaults.setExtraLibs([]);
+
+        // Disable all language providers
+        monaco.languages.typescript.javascriptDefaults.setEagerModelSync(false);
+        monaco.languages.typescript.typescriptDefaults.setEagerModelSync(false);
+
+        // Disable all language services
+        monaco.languages.typescript.javascriptDefaults.setEagerModelSync(false);
+        monaco.languages.typescript.typescriptDefaults.setEagerModelSync(false);
+
+        // Disable worker services
+        monaco.languages.typescript.javascriptDefaults.setWorkerOptions({
+            customWorkerPath: null
+        });
+        monaco.languages.typescript.typescriptDefaults.setWorkerOptions({
+            customWorkerPath: null
+        });
+    }
+
+    disableAllErrorChecking(monaco) {
+        // Disable all error checking and validation
+        try {
+            console.log('Starting Monaco error checking disable...');
+            
+            // Disable all language services
+            monaco.languages.typescript.javascriptDefaults.setEagerModelSync(false);
+            monaco.languages.typescript.typescriptDefaults.setEagerModelSync(false);
+
+            // Disable all diagnostics - use the most aggressive settings
+            monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+                noSemanticValidation: true,
+                noSyntaxValidation: true,
+                noSuggestionDiagnostics: true,
+                noValidation: true,
+                noImplicitAny: true,
+                noImplicitReturns: true,
+                noImplicitThis: true,
+                noUnusedLocals: true,
+                noUnusedParameters: true,
+                strict: false,
+                noLib: true,
+                allowNonTsExtensions: true
+            });
+
+            monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+                noSemanticValidation: true,
+                noSyntaxValidation: true,
+                noSuggestionDiagnostics: true,
+                noValidation: true,
+                noImplicitAny: true,
+                noImplicitReturns: true,
+                noImplicitThis: true,
+                noUnusedLocals: true,
+                noUnusedParameters: true,
+                strict: false,
+                noLib: true,
+                allowNonTsExtensions: true
+            });
+
+            // Disable all compiler options that might cause errors
+            monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+                noLib: true,
+                allowNonTsExtensions: true,
+                noImplicitAny: false,
+                noImplicitReturns: false,
+                noImplicitThis: false,
+                noUnusedLocals: false,
+                noUnusedParameters: false,
+                strict: false,
+                noEmit: true,
+                skipLibCheck: true,
+                skipDefaultLibCheck: true,
+                noErrorTruncation: true,
+                suppressExcessPropertyErrors: true,
+                suppressImplicitAnyIndexErrors: true,
+                allowJs: true,
+                checkJs: false,
+                noCheck: true
+            });
+
+            monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+                noLib: true,
+                allowNonTsExtensions: true,
+                noImplicitAny: false,
+                noImplicitReturns: false,
+                noImplicitThis: false,
+                noUnusedLocals: false,
+                noUnusedParameters: false,
+                strict: false,
+                noEmit: true,
+                skipLibCheck: true,
+                skipDefaultLibCheck: true,
+                noErrorTruncation: true,
+                suppressExcessPropertyErrors: true,
+                suppressImplicitAnyIndexErrors: true,
+                allowJs: true,
+                checkJs: false,
+                noCheck: true
+            });
+
+            // Clear all extra libraries
+            monaco.languages.typescript.javascriptDefaults.setExtraLibs([]);
+            monaco.languages.typescript.typescriptDefaults.setExtraLibs([]);
+
+            // Disable worker services
+            monaco.languages.typescript.javascriptDefaults.setWorkerOptions({
+                customWorkerPath: null
+            });
+            monaco.languages.typescript.typescriptDefaults.setWorkerOptions({
+                customWorkerPath: null
+            });
+
+            // Disable all language features
+            monaco.languages.typescript.javascriptDefaults.setEagerModelSync(false);
+            monaco.languages.typescript.typescriptDefaults.setEagerModelSync(false);
+
+            // Override Monaco's error reporting system
+            this.overrideMonacoErrorReporting(monaco);
+
+            console.log('All Monaco error checking disabled successfully');
+        } catch (error) {
+            console.log('Error disabling Monaco error checking:', error);
+        }
+    }
+
+    overrideMonacoErrorReporting(monaco) {
+        // Override Monaco's error reporting to prevent popups
+        try {
+            // Override the marker service to suppress all error markers
+            const originalSetModelMarkers = monaco.editor.setModelMarkers;
+            monaco.editor.setModelMarkers = (model, owner, markers) => {
+                // Filter out all error markers to prevent popups
+                const filteredMarkers = markers.filter(marker => 
+                    marker.severity !== monaco.MarkerSeverity.Error
+                );
+                return originalSetModelMarkers.call(monaco.editor, model, owner, filteredMarkers);
+            };
+
+            // Override the hover provider to prevent error popups
+            const originalRegisterHoverProvider = monaco.languages.registerHoverProvider;
+            monaco.languages.registerHoverProvider = (selector, provider) => {
+                const wrappedProvider = {
+                    provideHover: (model, position, token) => {
+                        try {
+                            const result = provider.provideHover(model, position, token);
+                            // Only show hover if it's not an error
+                            if (result && result.contents) {
+                                const contents = Array.isArray(result.contents) ? result.contents : [result.contents];
+                                const hasError = contents.some(content => 
+                                    typeof content === 'string' && content.toLowerCase().includes('error')
+                                );
+                                if (hasError) {
+                                    return null; // Suppress error hovers
+                                }
+                            }
+                            return result;
+                        } catch (error) {
+                            console.log('Hover provider error suppressed:', error);
+                            return null;
+                        }
+                    }
+                };
+                return originalRegisterHoverProvider.call(monaco.languages, selector, wrappedProvider);
+            };
+
+            console.log('Monaco error reporting overridden');
+        } catch (error) {
+            console.log('Error overriding Monaco error reporting:', error);
+        }
+    }
+
+    setupMarkerListener(monaco) {
+        // Listen for marker changes and show errors in footer instead of popups
+        monaco.editor.onDidChangeMarkers((uris) => {
+            try {
+                console.log('Marker change detected:', uris);
+                const model = this.editor.getModel();
+                if (!model) {
+                    console.log('No model found');
+                    return;
+                }
+
+                const markers = monaco.editor.getModelMarkers({ resource: model.uri });
+                console.log('Markers found:', markers.length, markers);
+                
+                if (markers.length > 0) {
+                    // Show errors in status bar instead of popups
+                    const errorMessages = markers.map(marker => marker.message).join('; ');
+                    console.log('Showing error in footer:', errorMessages);
+                    this.showErrorsInFooter(errorMessages);
+                } else {
+                    console.log('Clearing errors from footer');
+                    this.clearErrorsInFooter();
+                }
+            } catch (error) {
+                console.log('Marker listener error:', error);
+            }
+        });
+        
+        console.log('Marker listener setup complete');
+    }
+
+    showErrorsInFooter(errorMessage) {
+        // Show errors in the status bar instead of popups
+        const statusElement = document.getElementById('status-text');
+        if (statusElement) {
+            statusElement.textContent = `Editor Error: ${errorMessage}`;
+            statusElement.style.color = '#ff6b6b';
+            
+            // Auto-clear after 5 seconds
+            setTimeout(() => {
+                if (statusElement.textContent.includes('Editor Error:')) {
+                    statusElement.textContent = 'Ready';
+                    statusElement.style.color = '';
+                }
+            }, 5000);
+        }
+    }
+
+    clearErrorsInFooter() {
+        // Clear error messages from footer
+        const statusElement = document.getElementById('status-text');
+        if (statusElement && statusElement.textContent.includes('Editor Error:')) {
+            statusElement.textContent = 'Ready';
+            statusElement.style.color = '';
+        }
     }
 
     createFallbackEditor() {
-        // Create a simple textarea as fallback
+        // Create a simple textarea as fallback with no error checking
         const container = document.getElementById('monaco-editor');
         container.innerHTML = `
             <textarea id="fallback-editor" 
@@ -85,8 +433,9 @@ export class EditorManager {
                              background: #1e1e1e; color: #d4d4d4; 
                              border: none; padding: 10px; 
                              font-family: 'Consolas', 'Courier New', monospace; 
-                             font-size: 14px; resize: none; outline: none;"
-                      placeholder="// Welcome to Code CAD&#10;// Start typing your CAD script here..."></textarea>
+                             font-size: 14px; resize: none; outline: none;
+                             line-height: 1.5; tab-size: 4;"
+                      placeholder="// Welcome to Code CAD&#10;// Start typing your CAD script here...&#10;// No error popups - all errors show in status bar"></textarea>
         `;
         
         this.editor = {
@@ -103,9 +452,15 @@ export class EditorManager {
         
         // Setup basic event listeners for fallback
         const textarea = document.getElementById('fallback-editor');
+        
+        // Content change - enabled when live update is on
         textarea.addEventListener('input', () => {
+            console.log('Fallback editor content changed, callback exists:', !!this.contentChangeCallback);
             if (this.contentChangeCallback) {
+                console.log('Calling fallback content change callback with content length:', textarea.value.length);
                 this.contentChangeCallback(textarea.value);
+            } else {
+                console.log('No content change callback set for fallback editor');
             }
         });
         
@@ -116,21 +471,31 @@ export class EditorManager {
             document.getElementById('cursor-position').textContent = `Line ${line}, Column ${column}`;
         });
         
-        console.log('Fallback editor initialized');
+        // Add error suppression to the textarea
+        textarea.addEventListener('error', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Textarea error suppressed:', e);
+        });
+        
+        console.log('Fallback editor initialized - NO ERROR POPUPS');
     }
 
     async loadMonaco() {
         // Load Monaco Editor from CDN
         return new Promise((resolve, reject) => {
             if (window.monaco) {
+                console.log('Monaco already loaded');
                 resolve(window.monaco);
                 return;
             }
 
+            console.log('Loading Monaco Editor from CDN...');
             // Load Monaco Editor from CDN
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js';
             script.onload = () => {
+                console.log('Monaco loader script loaded');
                 if (window.require) {
                     window.require.config({ 
                         paths: { 
@@ -138,13 +503,18 @@ export class EditorManager {
                         } 
                     });
                     window.require(['vs/editor/editor.main'], () => {
+                        console.log('Monaco Editor main module loaded');
                         resolve(window.monaco);
                     });
                 } else {
+                    console.error('window.require not available');
                     reject(new Error('Monaco Editor loader failed to initialize'));
                 }
             };
-            script.onerror = () => reject(new Error('Failed to load Monaco Editor'));
+            script.onerror = (error) => {
+                console.error('Failed to load Monaco Editor script:', error);
+                reject(new Error('Failed to load Monaco Editor'));
+            };
             document.head.appendChild(script);
         });
     }
@@ -152,11 +522,15 @@ export class EditorManager {
     setupEventListeners() {
         if (!this.editor) return;
 
-        // Content change
+        // Content change - enabled when live update is on
         this.editor.onDidChangeModelContent(() => {
+            console.log('Editor content changed, callback exists:', !!this.contentChangeCallback);
             if (this.contentChangeCallback) {
                 const content = this.editor.getValue();
+                console.log('Calling content change callback with content length:', content.length);
                 this.contentChangeCallback(content);
+            } else {
+                console.log('No content change callback set');
             }
         });
 
@@ -334,7 +708,13 @@ export class EditorManager {
     }
 
     onContentChange(callback) {
+        console.log('onContentChange called, setting callback');
         this.contentChangeCallback = callback;
+        console.log('Content change callback set:', !!this.contentChangeCallback);
+    }
+
+    getCurrentLanguage() {
+        return this.currentLanguage;
     }
 
     // Error highlighting

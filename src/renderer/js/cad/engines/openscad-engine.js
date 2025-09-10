@@ -119,7 +119,7 @@ export class OpenSCADEngine extends BaseEngine {
             
             return this.createSuccess(objects);
         } catch (error) {
-            console.error('OpenSCAD execution error:', error);
+            console.log('OpenSCAD execution error:', error);
             return this.createError(error.message);
         }
     }
@@ -242,7 +242,7 @@ export class OpenSCADEngine extends BaseEngine {
             // Console for debugging
             console: {
                 log: (...args) => console.log('[CAD OpenSCAD]', ...args),
-                error: (...args) => console.error('[CAD OpenSCAD]', ...args),
+                error: (...args) => console.log('[CAD OpenSCAD Error]', ...args),
                 warn: (...args) => console.warn('[CAD OpenSCAD]', ...args)
             }
         };

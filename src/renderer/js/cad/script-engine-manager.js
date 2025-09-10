@@ -1,6 +1,5 @@
 // Script Engine Manager - Manages multiple language engines
 import { JavaScriptEngine } from './engines/javascript-engine.js';
-import { TypeScriptEngine } from './engines/typescript-engine.js';
 import { OpenSCADEngine } from './engines/openscad-engine.js';
 
 export class ScriptEngineManager {
@@ -15,7 +14,6 @@ export class ScriptEngineManager {
     initializeEngines() {
         // Register available engines
         this.engines.set('javascript', new JavaScriptEngine());
-        this.engines.set('typescript', new TypeScriptEngine());
         this.engines.set('openscad', new OpenSCADEngine());
         
         // Set default engine
@@ -58,7 +56,7 @@ export class ScriptEngineManager {
             result.renderTime = endTime - startTime;
             return result;
         } catch (error) {
-            console.error('Script execution error:', error);
+            console.log('Script execution error suppressed:', error.message);
             return {
                 success: false,
                 error: error.message,

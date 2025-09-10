@@ -31,8 +31,7 @@
     "wordWrap": "on",
     "minimap": true,
     "lineNumbers": "on",
-    "autoSave": true,
-    "autoSaveDelay": 1000
+    "liveUpdate": true
   },
   "viewer": {
     "backgroundColor": "#1e1e1e",
@@ -88,9 +87,10 @@
   },
   "scriptEngines": {
     "default": "javascript",
-    "available": ["javascript", "typescript", "openscad"],
+    "available": ["javascript", "openscad"],
     "timeout": 5000,
-    "maxMemory": 512
+    "maxMemory": 512,
+    "debounceDelay": 1000
   },
   "logging": {
     "level": "info",
@@ -107,6 +107,7 @@
   },
   "performance": {
     "enableHardwareAcceleration": true,
+    "enableGPUAcceleration": false,
     "enableWebGL": true,
     "enableWebGL2": true,
     "maxObjects": 1000,

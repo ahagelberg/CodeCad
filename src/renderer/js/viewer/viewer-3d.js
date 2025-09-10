@@ -13,9 +13,9 @@ export class Viewer3D {
         this.animationId = null;
         
         // Camera settings
-        this.cameraDistance = 10;
-        this.cameraAngleX = 0;
-        this.cameraAngleY = 0;
+        this.cameraDistance = 20;
+        this.cameraAngleX = Math.PI / 6; // 30 degrees from above
+        this.cameraAngleY = Math.PI / 4; // 45 degrees around
         this.cameraTarget = new THREE.Vector3(0, 0, 0);
         
         // Mouse controls
@@ -35,7 +35,18 @@ export class Viewer3D {
 
             // Create scene
             this.scene = new THREE.Scene();
-            this.scene.background = new THREE.Color(0x1e1e1e);
+            // Create a subtle gradient background
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const context = canvas.getContext('2d');
+            const gradient = context.createLinearGradient(0, 0, 0, 256);
+            gradient.addColorStop(0, '#f8f8f8');
+            gradient.addColorStop(1, '#e8e8e8');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 256, 256);
+            const texture = new THREE.CanvasTexture(canvas);
+            this.scene.background = texture;
 
             // Create camera
             this.camera = new THREE.PerspectiveCamera(
@@ -44,8 +55,8 @@ export class Viewer3D {
                 0.1,
                 1000
             );
-            this.camera.position.set(0, 0, this.cameraDistance);
-            this.camera.lookAt(this.cameraTarget);
+            // Apply the correct angled position immediately
+            this.updateCameraPosition();
 
             // Create renderer
             this.renderer = new THREE.WebGLRenderer({
@@ -62,7 +73,6 @@ export class Viewer3D {
             const initialWidth = Math.max(100, Math.min(container.clientWidth || 800, window.innerWidth));
             const initialHeight = Math.max(100, Math.min(container.clientHeight || 600, window.innerHeight));
             
-            console.log(`3D Viewer initial size: ${initialWidth}x${initialHeight}`);
             
             this.renderer.setSize(initialWidth, initialHeight);
             this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap pixel ratio to prevent issues
@@ -88,7 +98,6 @@ export class Viewer3D {
             // Add default objects for testing
             this.addDefaultObjects();
 
-            console.log('Three.js 3D Viewer initialized successfully');
         } catch (error) {
             console.error('Failed to initialize 3D Viewer:', error);
             throw error;
@@ -96,12 +105,13 @@ export class Viewer3D {
     }
 
     setupLighting() {
-        // Ambient light
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        // Ambient light - increased intensity
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+        ambientLight.userData.isLight = true;
         this.scene.add(ambientLight);
 
-        // Directional light
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        // Directional light - increased intensity
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
         directionalLight.position.set(10, 10, 5);
         directionalLight.castShadow = true;
         directionalLight.shadow.mapSize.width = 2048;
@@ -112,11 +122,13 @@ export class Viewer3D {
         directionalLight.shadow.camera.right = 10;
         directionalLight.shadow.camera.top = 10;
         directionalLight.shadow.camera.bottom = -10;
+        directionalLight.userData.isLight = true;
         this.scene.add(directionalLight);
 
-        // Point light
-        const pointLight = new THREE.PointLight(0xffffff, 0.5, 100);
+        // Point light - increased intensity
+        const pointLight = new THREE.PointLight(0xffffff, 0.8, 100);
         pointLight.position.set(-10, 10, 10);
+        pointLight.userData.isLight = true;
         this.scene.add(pointLight);
     }
 
@@ -137,7 +149,7 @@ export class Viewer3D {
             const deltaY = e.clientY - this.lastMouseY;
 
             // Rotate camera around target
-            this.cameraAngleY += deltaX * 0.01;
+            this.cameraAngleY -= deltaX * 0.01;
             this.cameraAngleX += deltaY * 0.01;
 
             // Clamp vertical rotation
@@ -228,7 +240,6 @@ export class Viewer3D {
 
         // Only resize if dimensions are valid and different
         if (width > 0 && height > 0 && (width !== this.canvas.width || height !== this.canvas.height)) {
-            console.log(`3D Viewer resizing to: ${width}x${height}`);
             this.camera.aspect = width / height;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(width, height);
@@ -276,13 +287,138 @@ export class Viewer3D {
         this.renderer.render(this.scene, this.camera);
     }
 
+    clearScene() {
+        if (this.scene) {
+            // Remove only CAD objects and helpers, preserve lights
+            const childrenToRemove = [];
+            this.scene.children.forEach(child => {
+                // Keep lights, camera, helpers, and other essential scene elements
+                if (!(child instanceof THREE.Light) && 
+                    !(child instanceof THREE.Camera) &&
+                    !child.userData.isLight &&
+                    !child.userData.isHelper) {
+                    childrenToRemove.push(child);
+                }
+            });
+            
+            childrenToRemove.forEach(child => {
+                this.scene.remove(child);
+                
+                // Dispose of geometry and materials if they exist
+                if (child.geometry) {
+                    child.geometry.dispose();
+                }
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(material => material.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            });
+            
+            // Clear the objects array
+            this.objects = [];
+        }
+    }
+
+    addGeometry(geometryData) {
+        if (!this.scene || !geometryData) return;
+
+        try {
+            let mesh = null;
+
+            // Create geometry based on type
+            switch (geometryData.type) {
+                case 'cube':
+                    const cubeGeometry = new THREE.BoxGeometry(
+                        geometryData.size[0], 
+                        geometryData.size[1], 
+                        geometryData.size[2]
+                    );
+                    const cubeMaterial = new THREE.MeshPhongMaterial({ 
+                        color: geometryData.color || 0x007acc,
+                        shininess: 30
+                    });
+                    mesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
+                    break;
+
+                case 'sphere':
+                    const sphereGeometry = new THREE.SphereGeometry(
+                        geometryData.radius, 
+                        geometryData.segments || 32, 
+                        geometryData.segments || 32
+                    );
+                    const sphereMaterial = new THREE.MeshPhongMaterial({ 
+                        color: geometryData.color || 0x007acc,
+                        shininess: 30
+                    });
+                    mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                    break;
+
+                case 'cylinder':
+                    const cylinderGeometry = new THREE.CylinderGeometry(
+                        geometryData.radius, 
+                        geometryData.radius, 
+                        geometryData.height, 
+                        geometryData.segments || 32
+                    );
+                    const cylinderMaterial = new THREE.MeshPhongMaterial({ 
+                        color: geometryData.color || 0x007acc,
+                        shininess: 30
+                    });
+                    mesh = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+                    break;
+
+                default:
+                    console.warn('Unknown geometry type:', geometryData.type);
+                    return;
+            }
+
+            if (mesh) {
+                // Apply position, rotation, and scale
+                if (geometryData.position) {
+                    mesh.position.set(
+                        geometryData.position[0], 
+                        geometryData.position[1], 
+                        geometryData.position[2]
+                    );
+                }
+
+                if (geometryData.rotation) {
+                    mesh.rotation.set(
+                        geometryData.rotation[0], 
+                        geometryData.rotation[1], 
+                        geometryData.rotation[2]
+                    );
+                }
+
+                if (geometryData.scale) {
+                    mesh.scale.set(
+                        geometryData.scale[0], 
+                        geometryData.scale[1], 
+                        geometryData.scale[2]
+                    );
+                }
+
+                // Add to scene
+                this.scene.add(mesh);
+                this.objects.push(mesh);
+            }
+        } catch (error) {
+            console.error('Failed to add geometry:', error);
+        }
+    }
+
+
     addDefaultObjects() {
         // Add a simple cube for testing
         const geometry = new THREE.BoxGeometry(2, 2, 2);
-        const material = new THREE.MeshLambertMaterial({ 
+        const material = new THREE.MeshPhongMaterial({ 
             color: 0x007acc,
-            transparent: true,
-            opacity: 0.8
+            shininess: 30,
+            transparent: false,
+            opacity: 1.0
         });
         const cube = new THREE.Mesh(geometry, material);
         cube.castShadow = true;
@@ -291,15 +427,18 @@ export class Viewer3D {
         this.objects.push(cube);
 
         // Add grid
-        const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x444444);
+        const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0xcccccc);
+        gridHelper.userData.isHelper = true;
         this.scene.add(gridHelper);
 
-        // Add axes helper
+        // Add axes helper to show coordinate system
         const axesHelper = new THREE.AxesHelper(5);
+        axesHelper.userData.isHelper = true;
         this.scene.add(axesHelper);
 
         this.updateObjectInfo();
     }
+
 
     updateScene(objects) {
         // Clear existing CAD objects (keep helpers)
@@ -356,8 +495,9 @@ export class Viewer3D {
                     return null;
             }
 
-            material = new THREE.MeshLambertMaterial({
+            material = new THREE.MeshPhongMaterial({
                 color: objData.color || 0x007acc,
+                shininess: 30,
                 transparent: objData.transparent || false,
                 opacity: objData.opacity || 1.0
             });
@@ -407,9 +547,9 @@ export class Viewer3D {
     }
 
     resetCamera() {
-        this.cameraDistance = 10;
-        this.cameraAngleX = 0;
-        this.cameraAngleY = 0;
+        this.cameraDistance = 20;
+        this.cameraAngleX = Math.PI / 6; // 30 degrees from above
+        this.cameraAngleY = Math.PI / 4; // 45 degrees around
         this.cameraTarget.set(0, 0, 0);
         this.updateCameraPosition();
     }

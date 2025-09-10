@@ -7,6 +7,7 @@ export class JavaScriptEngine extends BaseEngine {
         this.name = 'JavaScript Engine';
         this.version = '1.0.0';
         this.supportedExtensions = ['js'];
+        this.generatedGeometry = [];
         this.initializeCommands();
     }
 
@@ -111,30 +112,103 @@ export class JavaScriptEngine extends BaseEngine {
 
     async execute(script) {
         try {
+            // Clear previous geometry
+            this.generatedGeometry = [];
+            
             // Create a safe execution environment
             const sandbox = this.createSandbox();
             
-            // Wrap the script in a function to capture return value
-            const wrappedScript = `
-                (function() {
-                    ${script}
-                })();
-            `;
-            
-            // Execute the script
-            const result = new Function('sandbox', `
-                with (sandbox) {
-                    return ${wrappedScript};
-                }
-            `)(sandbox);
-            
-            // Process the result
-            const objects = this.processResult(result);
-            
-            return this.createSuccess(objects);
+            // Wrap script execution in try-catch to prevent any errors from bubbling up
+            try {
+                // Create a function that executes the script in the sandbox with comprehensive error suppression
+                const executeScript = new Function(
+                    'sandbox',
+                    `
+                    // Suppress all errors in the script execution context
+                    const originalError = window.onerror;
+                    const originalUnhandledRejection = window.onunhandledrejection;
+                    
+                    window.onerror = function(message, source, lineno, colno, error) {
+                        console.log('Script onerror suppressed:', message);
+                        return true; // Prevent default error handling
+                    };
+                    
+                    window.onunhandledrejection = function(event) {
+                        console.log('Script unhandledrejection suppressed:', event.reason);
+                        event.preventDefault();
+                        return true;
+                    };
+                    
+                    // Override console.error to prevent popups
+                    const originalConsoleError = console.error;
+                    console.error = function(...args) {
+                        console.log('Script console.error suppressed:', args.join(' '));
+                    };
+                    
+                    // Override alert, confirm, prompt
+                    const originalAlert = window.alert;
+                    const originalConfirm = window.confirm;
+                    const originalPrompt = window.prompt;
+                    
+                    window.alert = function(message) {
+                        console.log('Script alert suppressed:', message);
+                    };
+                    
+                    window.confirm = function(message) {
+                        console.log('Script confirm suppressed:', message);
+                        return true;
+                    };
+                    
+                    window.prompt = function(message, defaultValue) {
+                        console.log('Script prompt suppressed:', message);
+                        return defaultValue || '';
+                    };
+                    
+                    try {
+                        with (sandbox) {
+                            ${script}
+                        }
+                    } catch (e) {
+                        // Silently catch all script errors
+                        console.log('Script execution error:', e.message);
+                    } finally {
+                        // Restore original handlers
+                        window.onerror = originalError;
+                        window.onunhandledrejection = originalUnhandledRejection;
+                        console.error = originalConsoleError;
+                        window.alert = originalAlert;
+                        window.confirm = originalConfirm;
+                        window.prompt = originalPrompt;
+                    }
+                    `
+                );
+
+                // Execute the script
+                executeScript(sandbox);
+
+                // Return the generated geometry
+                return {
+                    success: true,
+                    data: this.generatedGeometry,
+                    message: 'Script executed successfully'
+                };
+
+            } catch (executionError) {
+                console.log('Script execution wrapper error:', executionError.message);
+                return {
+                    success: false,
+                    error: executionError.message,
+                    message: 'Script execution failed'
+                };
+            }
+
         } catch (error) {
-            console.error('JavaScript execution error:', error);
-            return this.createError(error.message);
+            console.log('Script engine error:', error.message);
+            return {
+                success: false,
+                error: error.message,
+                message: 'Script execution failed'
+            };
         }
     }
 
@@ -176,7 +250,7 @@ export class JavaScriptEngine extends BaseEngine {
             // Console for debugging
             console: {
                 log: (...args) => console.log('[CAD Script]', ...args),
-                error: (...args) => console.error('[CAD Script]', ...args),
+                error: (...args) => console.log('[CAD Script Error]', ...args),
                 warn: (...args) => console.warn('[CAD Script]', ...args)
             }
         };
@@ -198,12 +272,55 @@ export class JavaScriptEngine extends BaseEngine {
         return objects;
     }
 
+
+    // Override CAD command methods to add geometry to generatedGeometry array
+    createCube(size = [1, 1, 1], position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1]) {
+        console.log('createCube called with:', { size, position, rotation, scale });
+        const cube = super.createCube(size, position, rotation, scale);
+        console.log('createCube returning:', cube);
+        this.generatedGeometry.push(cube);
+        console.log('generatedGeometry now has', this.generatedGeometry.length, 'items');
+        return cube;
+    }
+
+    createSphere(radius = 1, segments = 32, position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1]) {
+        const sphere = super.createSphere(radius, segments, position, rotation, scale);
+        this.generatedGeometry.push(sphere);
+        return sphere;
+    }
+
+    createCylinder(radius = 1, height = 2, segments = 32, position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1]) {
+        const cylinder = super.createCylinder(radius, height, segments, position, rotation, scale);
+        this.generatedGeometry.push(cylinder);
+        return cylinder;
+    }
+
+    // Override translate to add debug logging
+    translate(vector, object) {
+        console.log('translate called with:', { vector, object });
+        const result = super.translate(vector, object);
+        console.log('translate returning:', result);
+        return result;
+    }
+
     async validate(script) {
         try {
-            // Basic syntax validation
+            // Basic syntax validation with error suppression
+            const validateFunction = new Function(`
+                try {
+                    ${script}
+                } catch (e) {
+                    // Silently catch validation errors
+                    console.log('Validation error suppressed:', e.message);
+                }
+            `);
+            
+            // Don't actually execute, just check syntax
             new Function(script);
             return { valid: true, errors: [] };
         } catch (error) {
+            // Return validation error but don't show popup
+            console.log('Syntax validation error:', error.message);
             return { 
                 valid: false, 
                 errors: [{

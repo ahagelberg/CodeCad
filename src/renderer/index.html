@@ -4,6 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code CAD</title>
+    <script>
+        // Suppress all errors before the app loads
+        window.addEventListener('error', function(e) {
+            console.log('Pre-app error suppressed:', e.error);
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            console.log('Pre-app unhandled rejection suppressed:', e.reason);
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        });
+        
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.log('Pre-app window.onerror suppressed:', message);
+            return true;
+        };
+        
+        window.onunhandledrejection = function(e) {
+            console.log('Pre-app window.onunhandledrejection suppressed:', e.reason);
+            e.preventDefault();
+            return true;
+        };
+    </script>
 </head>
 <body>
     <div id="app">
@@ -24,7 +51,6 @@
             <div class="toolbar-section">
                 <select id="language-selector" class="language-selector">
                     <option value="javascript">JavaScript</option>
-                    <option value="typescript">TypeScript</option>
                     <option value="openscad">OpenSCAD</option>
                 </select>
             </div>
@@ -43,7 +69,6 @@
             
             <div class="toolbar-section">
                 <div id="status-bar">
-                    <span id="status-text">Ready</span>
                     <span id="language-indicator">JavaScript</span>
                 </div>
             </div>
@@ -89,6 +114,18 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Debug Panel - Full width below viewer -->
+                <div id="debug-panel" class="debug-panel">
+                    <div class="debug-header">
+                        <span>Debug Console</span>
+                        <div class="debug-controls">
+                            <button id="toggle-debug" class="debug-toggle-btn" title="Toggle Debug Panel">▲</button>
+                            <button id="clear-debug" class="debug-clear-btn">Clear</button>
+                        </div>
+                    </div>
+                    <div id="debug-messages" class="debug-messages"></div>
+                </div>
             </div>
         </div>
 
@@ -96,6 +133,9 @@
         <div id="bottom-status">
             <div class="status-section">
                 <span id="cursor-position">Line 1, Column 1</span>
+            </div>
+            <div class="status-section">
+                <span id="status-message">Ready</span>
             </div>
             <div class="status-section">
                 <span id="file-info">Untitled</span>
@@ -134,21 +174,8 @@
     <script type="text/template" id="template-javascript">
 // JavaScript CAD Script
 // Create a simple cube
-const cube = cube([10, 10, 10]);
-translate([0, 0, 5])(cube);
-    </script>
-
-    <script type="text/template" id="template-typescript">
-// TypeScript CAD Script
-interface Vector3 {
-    x: number;
-    y: number;
-    z: number;
-}
-
-// Create a simple cube
-const cube = cube([10, 10, 10]);
-translate([0, 0, 5])(cube);
+const myCube = cube([10, 10, 10]);
+translate([0, 0, 5])(myCube);
     </script>
 
     <script type="text/template" id="template-openscad">

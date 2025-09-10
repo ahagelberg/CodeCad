@@ -67,7 +67,6 @@ export class SettingsDialog {
                                         <label for="default-language">Default Language:</label>
                                         <select id="default-language" class="setting-select">
                                             <option value="javascript">JavaScript</option>
-                                            <option value="typescript">TypeScript</option>
                                             <option value="openscad">OpenSCAD</option>
                                         </select>
                                     </div>
@@ -96,8 +95,8 @@ export class SettingsDialog {
                                         <input type="checkbox" id="minimap" class="setting-input">
                                     </div>
                                     <div class="setting-item">
-                                        <label for="auto-save">Auto save:</label>
-                                        <input type="checkbox" id="auto-save" class="setting-input">
+                                        <label for="live-update">Live update 3D view:</label>
+                                        <input type="checkbox" id="live-update" class="setting-input">
                                     </div>
                                 </div>
                             </div>
@@ -199,6 +198,15 @@ export class SettingsDialog {
                                     <div class="setting-item">
                                         <label for="hardware-acceleration">Hardware acceleration:</label>
                                         <input type="checkbox" id="hardware-acceleration" class="setting-input">
+                                    </div>
+                                    <div class="setting-item">
+                                        <label for="gpu-acceleration">3D GPU acceleration:</label>
+                                        <input type="checkbox" id="gpu-acceleration" class="setting-input">
+                                    </div>
+                                    <div class="setting-item">
+                                        <label for="gpu-acceleration-note" style="font-size: 11px; color: #969696; font-style: italic;">
+                                            Note: Disable if experiencing blank 3D viewport or GPU crashes
+                                        </label>
                                     </div>
                                     <div class="setting-item">
                                         <label for="webgl">WebGL:</label>
@@ -321,6 +329,7 @@ export class SettingsDialog {
         document.getElementById(`tab-${tabName}`).classList.add('active');
     }
 
+
     async loadSettings() {
         try {
             // Load all configuration values
@@ -339,7 +348,7 @@ export class SettingsDialog {
             document.getElementById('insert-spaces').checked = config.editor?.insertSpaces || true;
             document.getElementById('word-wrap').checked = config.editor?.wordWrap === 'on';
             document.getElementById('minimap').checked = config.editor?.minimap || true;
-            document.getElementById('auto-save').checked = config.editor?.autoSave || true;
+            document.getElementById('live-update').checked = config.editor?.liveUpdate || false;
             
             // Viewer settings
             document.getElementById('background-color').value = config.viewer?.backgroundColor || '#1e1e1e';
@@ -363,6 +372,7 @@ export class SettingsDialog {
             document.getElementById('dev-tools').checked = config.development?.devTools || true;
             document.getElementById('hot-reload').checked = config.development?.hotReload || true;
             document.getElementById('hardware-acceleration').checked = config.performance?.enableHardwareAcceleration || true;
+            document.getElementById('gpu-acceleration').checked = config.performance?.enableGPUAcceleration || false;
             document.getElementById('webgl').checked = config.performance?.enableWebGL || true;
             document.getElementById('webgl2').checked = config.performance?.enableWebGL2 || true;
             document.getElementById('max-objects').value = config.performance?.maxObjects || 1000;
@@ -389,7 +399,7 @@ export class SettingsDialog {
             await this.configManager.set('editor.insertSpaces', document.getElementById('insert-spaces').checked);
             await this.configManager.set('editor.wordWrap', document.getElementById('word-wrap').checked ? 'on' : 'off');
             await this.configManager.set('editor.minimap', document.getElementById('minimap').checked);
-            await this.configManager.set('editor.autoSave', document.getElementById('auto-save').checked);
+            await this.configManager.set('editor.liveUpdate', document.getElementById('live-update').checked);
             
             // Viewer settings
             await this.configManager.set('viewer.backgroundColor', document.getElementById('background-color').value);
@@ -413,6 +423,7 @@ export class SettingsDialog {
             await this.configManager.set('development.devTools', document.getElementById('dev-tools').checked);
             await this.configManager.set('development.hotReload', document.getElementById('hot-reload').checked);
             await this.configManager.set('performance.enableHardwareAcceleration', document.getElementById('hardware-acceleration').checked);
+            await this.configManager.set('performance.enableGPUAcceleration', document.getElementById('gpu-acceleration').checked);
             await this.configManager.set('performance.enableWebGL', document.getElementById('webgl').checked);
             await this.configManager.set('performance.enableWebGL2', document.getElementById('webgl2').checked);
             await this.configManager.set('performance.maxObjects', parseInt(document.getElementById('max-objects').value));

@@ -41,12 +41,6 @@ A cross-platform CAD application that mimics OpenSCAD functionality with a split
 - Single executable distribution
 - Native installers (.exe, .dmg, .deb, .rpm)
 
-**Alternative: Tauri (Rust + Web)**
-- Smaller bundle size than Electron
-- Better performance
-- Rust backend with web frontend
-- Growing ecosystem
-
 ### Modular Script Engine Architecture
 **Core Design Principle: Language-Agnostic Engine**
 - **Plugin-based Architecture**: Each scripting language is a separate module
@@ -63,26 +57,15 @@ A cross-platform CAD application that mimics OpenSCAD functionality with a split
    - Excellent performance with V8 engine
    - Easy debugging and development
 
-2. **TypeScript Engine**
-   - Type safety for CAD scripting
-   - Better IDE support
-   - Compiles to JavaScript
-   - Growing adoption in CAD tools
-
-3. **OpenSCAD Engine**
+2. **OpenSCAD Engine**
    - Direct compatibility with OpenSCAD scripts
    - Transpiler to JavaScript or native parser
    - Maintains OpenSCAD syntax and semantics
 
-4. **Python Engine (Future)**
+3. **Python Engine (Future)**
    - Pyodide for Python in the browser
    - Popular in scientific computing
    - Rich mathematical libraries
-
-5. **Lua Engine (Future)**
-   - Lightweight and embeddable
-   - Fast execution
-   - Good for CAD scripting
 
 ### 3D Rendering
 **Three.js**
@@ -97,7 +80,7 @@ A cross-platform CAD application that mimics OpenSCAD functionality with a split
 - Microsoft's 3D engine
 - Excellent performance
 - Rich feature set
-- Good TypeScript support
+- Good JavaScript support
 
 ### Geometry Processing
 **WebAssembly (WASM) Libraries**
@@ -139,7 +122,7 @@ A cross-platform CAD application that mimics OpenSCAD functionality with a split
 ### 1. Modular Script Engine System
 - **Engine Manager**: Manages multiple language engines and switching
 - **Common API Interface**: Standardized interface for all language engines
-- **Language Plugins**: Modular language engines (JavaScript, TypeScript, OpenSCAD, etc.)
+- **Language Plugins**: Modular language engines (JavaScript, OpenSCAD, etc.)
 - **Command Registry**: Universal command mapping across all languages
 - **Language Detection**: Automatic script language identification
 - **Cross-Language Compatibility**: Commands work identically in all supported languages
@@ -172,7 +155,7 @@ A cross-platform CAD application that mimics OpenSCAD functionality with a split
 - **Language Switching UI**: Easy switching between supported languages
 - **Language Detection**: Automatic language detection from file extension or content
 - **Automatic Indentation**: Smart indentation and formatting per language
-- **Language-Specific Features**: Language-specific features (TypeScript types, OpenSCAD modules, etc.)
+- **Language-Specific Features**: Language-specific features (OpenSCAD modules, etc.)
 
 ### 5. File System
 - **Script I/O**: Load and save CAD scripts
@@ -219,7 +202,7 @@ A cross-platform CAD application that mimics OpenSCAD functionality with a split
 - Variables and expressions across all supported languages
 - Loops and conditionals with language-specific implementations
 - Functions and modules with cross-language compatibility
-- TypeScript engine implementation
+- JavaScript engine implementation
 - Advanced scripting features
 - Language-specific optimizations and features
 
@@ -259,7 +242,6 @@ code-cad/
 │   │   │   │   ├── engines/  # Language engine plugins
 │   │   │   │   │   ├── base-engine.js
 │   │   │   │   │   ├── javascript-engine.js
-│   │   │   │   │   ├── typescript-engine.js
 │   │   │   │   │   └── openscad-engine.js
 │   │   │   │   ├── command-registry.js
 │   │   │   │   ├── primitives.js
@@ -338,7 +320,7 @@ code-cad/
 
 ## Success Metrics
 - Successfully renders basic 3D primitives with Three.js
-- Supports multiple scripting languages (JavaScript, TypeScript, OpenSCAD) with identical CAD functionality
+- Supports multiple scripting languages (JavaScript, OpenSCAD) with identical CAD functionality
 - Seamless language switching without application restart
 - Exports valid STL files using Three.js exporters
 - Runs smoothly on Windows, Linux, macOS as standalone Electron app

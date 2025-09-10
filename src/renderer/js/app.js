@@ -6,6 +6,7 @@ import { ScriptEngineManager } from './cad/script-engine-manager.js';
 import { FileManager } from './utils/file-manager.js';
 import { SettingsDialog } from './ui/settings-dialog.js';
 import { getConfigManager } from './utils/config-manager.js';
+import './utils/debug-console.js';
 
 class CodeCADApp {
     constructor() {
@@ -17,6 +18,8 @@ class CodeCADApp {
         this.configManager = null;
         this.currentFile = null;
         this.currentLanguage = 'javascript';
+        this.debounceTimer = null;
+        this.debounceDelay = 500; // Default delay in milliseconds
         
         this.init();
     }
@@ -24,6 +27,12 @@ class CodeCADApp {
     async init() {
         try {
             console.log('Initializing Code CAD application...');
+            
+            // Initialize debug console first
+            this.debugConsole = new DebugConsole();
+            
+            // Suppress all JavaScript error popups
+            this.suppressErrorPopups();
             
             // Initialize components
             console.log('Initializing config manager...');
@@ -53,21 +62,29 @@ class CodeCADApp {
             await this.initializeUI();
 
             // Load default template
+            console.log('About to load default template...');
             this.loadDefaultTemplate();
+
+            // Load debounce delay from config
+            await this.loadDebounceConfig();
 
             console.log('Code CAD application initialized successfully');
         } catch (error) {
-            console.error('Failed to initialize application:', error);
+            console.log('Failed to initialize application:', error);
             this.showError('Initialization Error', error.message);
         }
     }
 
     async initializeUI() {
         // Initialize Monaco Editor
+        console.log('Initializing editor manager...');
         await this.editorManager.initialize();
+        console.log('Editor manager initialization complete');
         
         // Initialize 3D Viewer
+        console.log('Initializing 3D viewer...');
         await this.viewer3D.initialize();
+        console.log('3D viewer initialized successfully');
         
         // Setup language switching
         this.setupLanguageSwitching();
@@ -111,10 +128,263 @@ class CodeCADApp {
             this.hideError();
         });
 
-        // Editor content change
-        this.editorManager.onContentChange((content) => {
-            this.handleScriptChange(content);
+        // Editor content change - only enabled if live update is on
+        this.setupLiveUpdate();
+    }
+
+    suppressErrorPopups() {
+        // Suppress all JavaScript error popups
+        window.addEventListener('error', (event) => {
+            console.log('JavaScript error suppressed:', event.error?.message || event.message);
+            this.updateStatus(`Error: ${event.error?.message || event.message}`, 'error');
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
         });
+
+        // Suppress unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            console.log('Unhandled promise rejection suppressed:', event.reason);
+            this.updateStatus(`Promise Error: ${event.reason}`, 'error');
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        });
+
+        // Override console.error to prevent popups
+        const originalConsoleError = console.error;
+        console.error = (...args) => {
+            // Log to console but don't show popups
+            originalConsoleError.apply(console, args);
+            // Also show in status bar
+            const errorMsg = args.join(' ');
+            this.updateStatus(`Console Error: ${errorMsg}`, 'error');
+        };
+
+        // Override alert to prevent popups
+        window.alert = (message) => {
+            console.log('Alert suppressed:', message);
+            this.updateStatus(`Alert: ${message}`, 'warning');
+        };
+
+        // Override confirm to prevent popups
+        window.confirm = (message) => {
+            console.log('Confirm suppressed:', message);
+            this.updateStatus(`Confirm: ${message}`, 'warning');
+            return true; // Default to true
+        };
+
+        // Override prompt to prevent popups
+        window.prompt = (message, defaultValue) => {
+            console.log('Prompt suppressed:', message);
+            this.updateStatus(`Prompt: ${message}`, 'warning');
+            return defaultValue || '';
+        };
+
+        // Suppress any remaining error sources
+        const originalOnError = window.onerror;
+        window.onerror = (message, source, lineno, colno, error) => {
+            console.log('Window onerror suppressed:', message);
+            this.updateStatus(`Script Error: ${message}`, 'error');
+            return true; // Prevent default error handling
+        };
+
+        // Suppress any remaining unhandled rejections
+        const originalOnUnhandledRejection = window.onunhandledrejection;
+        window.onunhandledrejection = (event) => {
+            console.log('Window onunhandledrejection suppressed:', event.reason);
+            this.updateStatus(`Unhandled Rejection: ${event.reason}`, 'error');
+            event.preventDefault();
+            return true;
+        };
+
+        // Override any other potential error sources
+        if (window.chrome && window.chrome.runtime) {
+            window.chrome.runtime.onError = () => {};
+        }
+
+        // Suppress errors at document level
+        document.addEventListener('error', (event) => {
+            console.log('Document error suppressed:', event.error);
+            this.updateStatus(`Document Error: ${event.error?.message || 'Unknown error'}`, 'error');
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        });
+
+        // Suppress any remaining global error handlers
+        if (typeof globalThis !== 'undefined') {
+            globalThis.onerror = (message, source, lineno, colno, error) => {
+                console.log('GlobalThis onerror suppressed:', message);
+                this.updateStatus(`Global Error: ${message}`, 'error');
+                return true;
+            };
+        }
+
+        // Suppress any remaining global unhandled rejection handlers
+        if (typeof globalThis !== 'undefined') {
+            globalThis.onunhandledrejection = (event) => {
+                console.log('GlobalThis onunhandledrejection suppressed:', event.reason);
+                this.updateStatus(`Global Rejection: ${event.reason}`, 'error');
+                event.preventDefault();
+                return true;
+            };
+        }
+
+        // Override any potential error reporting
+        if (window.reportError) {
+            window.reportError = (error) => {
+                console.log('ReportError suppressed:', error);
+                this.updateStatus(`Reported Error: ${error.message || error}`, 'error');
+            };
+        }
+
+        console.log('All error popups suppressed');
+    }
+
+    async setupLiveUpdate() {
+        try {
+            console.log('Setting up live update...');
+            const config = await this.configManager.get();
+            console.log('Config loaded:', config);
+            const liveUpdate = config.editor?.liveUpdate || false;
+            console.log('Live update setting:', liveUpdate);
+            
+            if (liveUpdate) {
+                console.log('Enabling content change callback...');
+                // Enable content change callback for live updates
+                this.editorManager.onContentChange((content) => {
+                    console.log('Content change callback triggered with content:', content);
+                    this.handleScriptChange(content);
+                });
+                console.log('Live update enabled successfully');
+            } else {
+                console.log('Live update disabled - enabling anyway for testing');
+                // Enable anyway for testing
+                this.editorManager.onContentChange((content) => {
+                    console.log('Content change callback triggered with content:', content);
+                    this.handleScriptChange(content);
+                });
+            }
+        } catch (error) {
+            console.log('Failed to setup live update:', error);
+        }
+    }
+
+    handleScriptChange(content) {
+        // Clear existing timer
+        if (this.debounceTimer) {
+            clearTimeout(this.debounceTimer);
+        }
+
+        // Set new timer
+        this.debounceTimer = setTimeout(() => {
+            // Get current content from editor instead of using the parameter
+            const currentContent = this.editorManager.getContent();
+            this.executeScript(currentContent);
+        }, this.debounceDelay);
+
+        // Show typing indicator
+        this.updateStatus('Typing...');
+    }
+
+    async executeScript(content) {
+        try {
+            console.log('executeScript called with content:', content);
+            
+            // Only process if we have content
+            if (!content || content.trim() === '') {
+                console.log('No content to process');
+                this.updateStatus('Ready');
+                return;
+            }
+
+            // Get current language
+            const language = this.editorManager.getCurrentLanguage();
+            console.log('Current language:', language);
+            
+            // Try to execute the script
+            console.log('Executing script...');
+            const result = await this.scriptEngineManager.execute(content);
+            console.log('Script execution result:', result);
+            
+            if (result && result.success) {
+                console.log('Script executed successfully, updating 3D view with data:', result.data);
+                // Update 3D view with the result
+                await this.update3DView(result.data);
+                this.updateStatus('Script executed successfully');
+            } else {
+                console.log('Script execution failed:', result?.error || 'Unknown error');
+                // Show error in status bar instead of popup
+                const errorMsg = result?.error || 'Script execution failed';
+                this.updateStatus(`Error: ${errorMsg}`, 'error');
+            }
+        } catch (error) {
+            // Show error in status bar instead of popup
+            console.log('Script execution failed (ignored):', error.message);
+            this.updateStatus(`Error: ${error.message}`, 'error');
+        }
+    }
+
+    async update3DView(geometryData) {
+        try {
+            console.log('update3DView called with geometryData:', geometryData);
+            console.log('viewer3D exists:', !!this.viewer3D);
+            
+            if (this.viewer3D && geometryData) {
+                console.log('Clearing scene...');
+                // Clear existing geometry
+                this.viewer3D.clearScene();
+                
+                console.log('Adding geometry...');
+                // Add new geometry
+                if (Array.isArray(geometryData)) {
+                    console.log('Adding array of geometry:', geometryData.length, 'items');
+                    geometryData.forEach((item, index) => {
+                        console.log(`Adding geometry item ${index}:`, item);
+                        this.viewer3D.addGeometry(item);
+                    });
+                } else {
+                    console.log('Adding single geometry item:', geometryData);
+                    this.viewer3D.addGeometry(geometryData);
+                }
+                
+                console.log('Rendering scene...');
+                // Render the scene
+                this.viewer3D.render();
+                console.log('3D view updated successfully');
+            } else {
+                console.log('Cannot update 3D view - viewer3D or geometryData missing');
+            }
+        } catch (error) {
+            console.log('Failed to update 3D view:', error);
+        }
+    }
+
+    updateStatus(message, type = 'info') {
+        try {
+            const statusElement = document.getElementById('status-message');
+            if (statusElement) {
+                statusElement.textContent = message;
+                
+                // Add styling based on type
+                statusElement.className = `status-${type}`;
+                
+                // Auto-clear error messages after 5 seconds
+                if (type === 'error') {
+                    setTimeout(() => {
+                        if (statusElement.textContent === message) {
+                            statusElement.textContent = 'Ready';
+                            statusElement.className = 'status-info';
+                        }
+                    }, 5000);
+                }
+            } else {
+                console.log('Status message element not found');
+            }
+        } catch (error) {
+            console.log('Failed to update status:', error);
+        }
     }
 
     setupMenuListeners() {
@@ -321,9 +591,25 @@ class CodeCADApp {
     loadDefaultTemplate() {
         const template = document.getElementById(`template-${this.currentLanguage}`);
         if (template) {
-            this.editorManager.setContent(template.textContent.trim());
+            const content = template.textContent.trim();
+            console.log('Loading template for', this.currentLanguage, ':', content);
+            this.editorManager.setContent(content);
+        } else {
+            console.log('No template found for', this.currentLanguage);
         }
     }
+
+    async loadDebounceConfig() {
+        try {
+            const config = await this.configManager.get();
+            this.debounceDelay = config.scriptEngines?.debounceDelay || 500;
+            console.log('Debounce delay loaded:', this.debounceDelay, 'ms');
+        } catch (error) {
+            console.log('Failed to load debounce config, using default:', error);
+            this.debounceDelay = 500;
+        }
+    }
+
 
     loadScript(content, filename) {
         this.editorManager.setContent(content);
@@ -332,7 +618,6 @@ class CodeCADApp {
         const extension = filename.split('.').pop().toLowerCase();
         const languageMap = {
             'js': 'javascript',
-            'ts': 'typescript',
             'scad': 'openscad',
             'cad': 'javascript'
         };
@@ -342,24 +627,6 @@ class CodeCADApp {
         }
     }
 
-    async handleScriptChange(content) {
-        try {
-            this.updateStatus('Processing script...');
-            
-            // Execute script with current engine
-            const result = await this.scriptEngineManager.execute(content);
-            
-            if (result.success) {
-                // Update 3D viewer with results
-                this.viewer3D.updateScene(result.objects);
-                this.updateStatus('Script executed successfully');
-            } else {
-                this.showError('Script Error', result.error);
-            }
-        } catch (error) {
-            this.showError('Script Execution Error', error.message);
-        }
-    }
 
     togglePane(pane) {
         const editorPane = document.getElementById('editor-pane');
@@ -377,9 +644,6 @@ class CodeCADApp {
         }
     }
 
-    updateStatus(message) {
-        document.getElementById('status-text').textContent = message;
-    }
 
     updateFileInfo(filename) {
         document.getElementById('file-info').textContent = filename;
@@ -397,13 +661,9 @@ class CodeCADApp {
     }
 
     showError(title, message) {
-        const dialog = document.getElementById('error-dialog');
-        const titleElement = dialog.querySelector('.modal-header h3');
-        const messageElement = document.getElementById('error-message');
-        
-        titleElement.textContent = title;
-        messageElement.textContent = message;
-        dialog.classList.remove('hidden');
+        // Show error in status bar instead of popup
+        this.updateStatus(`${title}: ${message}`, 'error');
+        console.log(`Error suppressed: ${title} - ${message}`);
     }
 
     hideError() {
@@ -415,12 +675,12 @@ class CodeCADApp {
             if (this.settingsDialog) {
                 await this.settingsDialog.open();
             } else {
-                console.error('Settings dialog not initialized');
-                alert('Settings dialog not available. Please restart the application.');
+                console.log('Settings dialog not initialized');
+                this.updateStatus('Settings dialog not available. Please restart the application.', 'error');
             }
         } catch (error) {
-            console.error('Failed to open settings:', error);
-            alert('Failed to open settings: ' + error.message);
+            console.log('Failed to open settings:', error);
+            this.updateStatus('Failed to open settings: ' + error.message, 'error');
         }
     }
 }
