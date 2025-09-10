@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code CAD</title>
+</head>
+<body>
+    <div id="app">
+        <!-- Top toolbar -->
+        <div id="toolbar">
+            <div class="toolbar-section">
+                <button id="new-file" class="toolbar-btn" title="New File (Ctrl+N)">
+                    <span class="icon">📄</span>
+                </button>
+                <button id="open-file" class="toolbar-btn" title="Open File (Ctrl+O)">
+                    <span class="icon">📂</span>
+                </button>
+                <button id="save-file" class="toolbar-btn" title="Save File (Ctrl+S)">
+                    <span class="icon">💾</span>
+                </button>
+            </div>
+            
+            <div class="toolbar-section">
+                <select id="language-selector" class="language-selector">
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="openscad">OpenSCAD</option>
+                </select>
+            </div>
+            
+            <div class="toolbar-section">
+                <button id="export-stl" class="toolbar-btn" title="Export STL">
+                    <span class="icon">📦</span>
+                </button>
+                <button id="export-step" class="toolbar-btn" title="Export STEP">
+                    <span class="icon">📋</span>
+                </button>
+                <button id="settings" class="toolbar-btn" title="Settings">
+                    <span class="icon">⚙️</span>
+                </button>
+            </div>
+            
+            <div class="toolbar-section">
+                <div id="status-bar">
+                    <span id="status-text">Ready</span>
+                    <span id="language-indicator">JavaScript</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content area -->
+        <div id="main-content">
+            <!-- Left pane - Code Editor -->
+            <div id="editor-pane">
+                <div class="pane-header">
+                    <h3>Script Editor</h3>
+                    <div class="pane-controls">
+                        <button id="toggle-editor" class="pane-toggle" title="Toggle Editor">−</button>
+                    </div>
+                </div>
+                <div id="editor-container">
+                    <div id="monaco-editor"></div>
+                </div>
+            </div>
+
+            <!-- Resizer -->
+            <div id="resizer"></div>
+
+            <!-- Right pane - 3D Viewer -->
+            <div id="viewer-pane">
+                <div class="pane-header">
+                    <h3>3D Viewer</h3>
+                    <div class="pane-controls">
+                        <button id="reset-camera" class="viewer-btn" title="Reset Camera">🎯</button>
+                        <button id="toggle-viewer" class="pane-toggle" title="Toggle Viewer">−</button>
+                    </div>
+                </div>
+                <div id="viewer-container">
+                    <canvas id="three-canvas"></canvas>
+                    <div id="viewer-overlay">
+                        <div id="viewer-info">
+                            <div id="camera-info">
+                                <span>Camera: X: 0, Y: 0, Z: 10</span>
+                            </div>
+                            <div id="object-info">
+                                <span>Objects: 0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom status bar -->
+        <div id="bottom-status">
+            <div class="status-section">
+                <span id="cursor-position">Line 1, Column 1</span>
+            </div>
+            <div class="status-section">
+                <span id="file-info">Untitled</span>
+            </div>
+            <div class="status-section">
+                <span id="render-time">Render: 0ms</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="hidden">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Processing script...</p>
+        </div>
+    </div>
+
+    <!-- Error dialog -->
+    <div id="error-dialog" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Error</h3>
+                <button id="close-error" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre id="error-message"></pre>
+            </div>
+            <div class="modal-footer">
+                <button id="error-ok" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script templates -->
+    <script type="text/template" id="template-javascript">
+// JavaScript CAD Script
+// Create a simple cube
+const cube = cube([10, 10, 10]);
+translate([0, 0, 5])(cube);
+    </script>
+
+    <script type="text/template" id="template-typescript">
+// TypeScript CAD Script
+interface Vector3 {
+    x: number;
+    y: number;
+    z: number;
+}
+
+// Create a simple cube
+const cube = cube([10, 10, 10]);
+translate([0, 0, 5])(cube);
+    </script>
+
+    <script type="text/template" id="template-openscad">
+// OpenSCAD Script
+// Create a simple cube
+cube([10, 10, 10]);
+translate([0, 0, 5]) cube([10, 10, 10]);
+    </script>
+</body>
+</html>

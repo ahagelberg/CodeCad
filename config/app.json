@@ -1,0 +1,123 @@
+{
+  "app": {
+    "version": "1.0.0",
+    "description": "A cross-platform CAD application with modular scripting language support"
+  },
+  "window": {
+    "width": 1400,
+    "height": 900,
+    "minWidth": 800,
+    "minHeight": 600,
+    "title": "Code CAD",
+    "showOnReady": true,
+    "center": true,
+    "resizable": true,
+    "maximizable": true,
+    "minimizable": true,
+    "closable": true
+  },
+  "development": {
+    "webPort": 3000,
+    "hotReload": true,
+    "devTools": true,
+    "debugMode": false
+  },
+  "editor": {
+    "defaultLanguage": "javascript",
+    "fontSize": 14,
+    "fontFamily": "Consolas, 'Courier New', monospace",
+    "tabSize": 4,
+    "insertSpaces": true,
+    "wordWrap": "on",
+    "minimap": true,
+    "lineNumbers": "on",
+    "autoSave": true,
+    "autoSaveDelay": 1000
+  },
+  "viewer": {
+    "backgroundColor": "#1e1e1e",
+    "gridSize": 20,
+    "gridDivisions": 20,
+    "showAxes": true,
+    "showGrid": true,
+    "cameraDistance": 10,
+    "cameraSpeed": 0.01,
+    "zoomSpeed": 0.1,
+    "minZoom": 1,
+    "maxZoom": 100
+  },
+  "rendering": {
+    "antialias": true,
+    "shadows": true,
+    "shadowMapSize": 2048,
+    "pixelRatio": "auto",
+    "maxFPS": 60
+  },
+  "lighting": {
+    "ambientLight": {
+      "color": "#404040",
+      "intensity": 0.6
+    },
+    "directionalLight": {
+      "color": "#ffffff",
+      "intensity": 0.8,
+      "position": [10, 10, 5],
+      "castShadow": true
+    },
+    "pointLight": {
+      "color": "#ffffff",
+      "intensity": 0.5,
+      "position": [-10, 10, 10],
+      "distance": 100
+    }
+  },
+  "fileTypes": {
+    "supportedExtensions": [".js", ".ts", ".scad", ".cad"],
+    "defaultExtension": ".js",
+    "autoDetectLanguage": true
+  },
+  "export": {
+    "stl": {
+      "defaultFilename": "model.stl",
+      "ascii": false
+    },
+    "step": {
+      "defaultFilename": "model.step",
+      "version": "AP214"
+    }
+  },
+  "scriptEngines": {
+    "default": "javascript",
+    "available": ["javascript", "typescript", "openscad"],
+    "timeout": 5000,
+    "maxMemory": 512
+  },
+  "logging": {
+    "level": "info",
+    "console": true,
+    "file": false,
+    "maxFileSize": "10MB",
+    "maxFiles": 5
+  },
+  "security": {
+    "nodeIntegration": false,
+    "contextIsolation": true,
+    "enableRemoteModule": false,
+    "allowRunningInsecureContent": false
+  },
+  "performance": {
+    "enableHardwareAcceleration": true,
+    "enableWebGL": true,
+    "enableWebGL2": true,
+    "maxObjects": 1000,
+    "lodEnabled": true
+  },
+  "ui": {
+    "theme": "dark",
+    "language": "en",
+    "showWelcomeScreen": true,
+    "rememberWindowState": true,
+    "rememberOpenFiles": true,
+    "maxRecentFiles": 10
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "name": "code-cad",
+  "version": "1.0.0",
+  "description": "A cross-platform CAD application with modular scripting language support",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "dev-safe": "electron . --dev --disable-gpu",
+    "build": "webpack --mode=production",
+    "build:dev": "webpack --mode=development",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux",
+    "pack": "electron-builder --dir",
+    "test": "jest",
+    "lint": "eslint src/",
+    "format": "prettier --write src/"
+  },
+  "keywords": [
+    "cad",
+    "3d",
+    "modeling",
+    "openscad",
+    "electron",
+    "threejs"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "babel-loader": "^9.1.3",
+    "css-loader": "^6.8.1",
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4",
+    "eslint": "^8.52.0",
+    "html-webpack-plugin": "^5.5.3",
+    "jest": "^29.7.0",
+    "prettier": "^3.0.3",
+    "style-loader": "^3.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "monaco-editor": "^0.44.0",
+    "three": "^0.158.0"
+  },
+  "build": {
+    "appId": "com.yourcompany.code-cad",
+    "productName": "Code CAD",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "resources/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icons/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "resources/icons/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "resources/icons/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
