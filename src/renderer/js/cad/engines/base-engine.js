@@ -5,11 +5,26 @@ export class BaseEngine {
         this.version = '1.0.0';
         this.supportedExtensions = [];
         this.commands = new Map();
+        this.aliases = new Map();
         this.initializeCommands();
+        this.initializeAliases();
     }
 
     initializeCommands() {
         // Override in subclasses
+    }
+
+    initializeAliases() {
+        // Override in subclasses to define aliases
+        // Example: this.aliases.set('move', 'translate');
+    }
+
+    addAlias(alias, targetCommand) {
+        this.aliases.set(alias, targetCommand);
+    }
+
+    resolveAlias(command) {
+        return this.aliases.get(command) || command;
     }
 
     async execute(script) {
@@ -21,11 +36,14 @@ export class BaseEngine {
     }
 
     getAvailableCommands() {
-        return Array.from(this.commands.keys());
+        const commands = Array.from(this.commands.keys());
+        const aliasCommands = Array.from(this.aliases.keys());
+        return [...commands, ...aliasCommands];
     }
 
     getCommandHelp(command) {
-        return this.commands.get(command) || null;
+        const resolvedCommand = this.resolveAlias(command);
+        return this.commands.get(resolvedCommand) || null;
     }
 
     getInfo() {

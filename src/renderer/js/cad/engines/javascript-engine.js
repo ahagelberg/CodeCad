@@ -11,6 +11,13 @@ export class JavaScriptEngine extends BaseEngine {
         this.initializeCommands();
     }
 
+    initializeAliases() {
+        // Define command aliases
+        this.addAlias('move', 'translate');
+        this.addAlias('square', 'rectangle');
+        this.addAlias('box', 'cube');
+    }
+
     initializeCommands() {
         // Register CAD commands
         this.commands.set('cube', {
@@ -246,6 +253,12 @@ export class JavaScriptEngine extends BaseEngine {
             scale: (object, factors) => {
                 return this.scale(object, factors);
             },
+            
+            // Aliases
+            move: (object, vector) => {
+                return this.translate(object, vector);
+            },
+            box: (...args) => this.createCube(...args),
             
             // Boolean operations
             union: (objects) => this.union(objects),
