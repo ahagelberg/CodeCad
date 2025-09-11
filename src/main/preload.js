@@ -6,11 +6,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // File operations
   saveFile: (filePath, content) => ipcRenderer.invoke('save-file', { filePath, content }),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
-  showSaveDialog: () => ipcRenderer.invoke('show-save-dialog'),
+  showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
+  getUserDocumentsPath: () => ipcRenderer.invoke('get-user-documents-path'),
   
   // Export operations
-  exportSTL: (filePath, meshData) => ipcRenderer.invoke('export-stl', { filePath, meshData }),
-  exportSTEP: (filePath, geometryData) => ipcRenderer.invoke('export-step', { filePath, geometryData }),
+  exportSTL: (data) => ipcRenderer.invoke('export-stl', data),
+  exportSTEP: (data) => ipcRenderer.invoke('export-step', data),
   
   // Menu event listeners
   onMenuNewFile: (callback) => ipcRenderer.on('menu-new-file', callback),

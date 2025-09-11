@@ -6,6 +6,8 @@ import { ScriptEngineManager } from './cad/script-engine-manager.js';
 import { FileManager } from './utils/file-manager.js';
 import { SettingsDialog } from './ui/settings-dialog.js';
 import { getConfigManager } from './utils/config-manager.js';
+import { STLExporter } from './utils/stl-exporter.js';
+import { STEPExporter } from './utils/step-exporter.js';
 import './utils/debug-console.js';
 
 class CodeCADApp {
@@ -491,6 +493,13 @@ class CodeCADApp {
             this.currentFile = data.filePath;
             this.loadScript(data.content, data.filePath);
             this.updateFileInfo(data.filePath);
+            
+            // Update last used directory
+            const directory = data.filePath.substring(0, data.filePath.lastIndexOf('/') || data.filePath.lastIndexOf('\\'));
+            if (directory) {
+                this.fileManager.setLastUsedDirectory(directory);
+            }
+            
             this.updateStatus('File opened');
         } catch (error) {
             this.showError('Open File Error', error.message);
@@ -521,12 +530,25 @@ class CodeCADApp {
                 await this.fileManager.saveFile(filePath, content);
                 this.currentFile = filePath;
                 this.updateFileInfo(filePath);
+                
+                // Update last used directory
+                const directory = filePath.substring(0, filePath.lastIndexOf('/') || filePath.lastIndexOf('\\'));
+                if (directory) {
+                    this.fileManager.setLastUsedDirectory(directory);
+                }
+                
                 this.updateStatus('File saved');
             } else {
                 // Show save dialog
                 if (window.electronAPI) {
-                    const result = await window.electronAPI.showSaveDialog();
+                    const result = await window.electronAPI.showSaveDialog({
+                        lastUsedDirectory: this.fileManager.getLastUsedDirectory()
+                    });
                     if (result.success) {
+                        // Update last used directory
+                        if (result.directory) {
+                            this.fileManager.setLastUsedDirectory(result.directory);
+                        }
                         await this.saveAsFile(result.filePath);
                     }
                 } else {
@@ -548,11 +570,56 @@ class CodeCADApp {
                 throw new Error('No 3D objects to export');
             }
             
-            // TODO: Implement STL export
-            console.log('STL export not yet implemented');
+            // Show save dialog
+            if (window.electronAPI) {
+                const result = await window.electronAPI.showSaveDialog({
+                    lastUsedDirectory: this.fileManager.getLastUsedDirectory(),
+                    filters: [
+                        { name: 'STL Files', extensions: ['stl'] },
+                        { name: 'All Files', extensions: ['*'] }
+                    ]
+                });
+                
+                if (result.success && result.filePath) {
+                    // Create STL exporter
+                    const exporter = new STLExporter();
+                    
+                    // Export as binary STL
+                    const stlData = exporter.export(meshData, { 
+                        binary: true, 
+                        name: 'CodeCAD_Export' 
+                    });
+                    
+                    // Send to main process for file writing
+                    const exportResult = await window.electronAPI.exportSTL({
+                        filePath: result.filePath,
+                        stlData: stlData,
+                        isBinary: true
+                    });
+                    
+                    if (exportResult.success) {
+                        // Update last used directory
+                        if (result.directory) {
+                            this.fileManager.setLastUsedDirectory(result.directory);
+                        }
+                        this.updateStatus(`STL exported to: ${result.filePath}`);
+                    } else {
+                        throw new Error(exportResult.error);
+                    }
+                } else {
+                    this.updateStatus('STL export cancelled');
+                }
+            } else {
+                // Fallback for web environment - download directly
+                const exporter = new STLExporter();
+                exporter.exportToFile(meshData, 'export.stl', { 
+                    binary: true, 
+                    name: 'CodeCAD_Export' 
+                });
+                this.updateStatus('STL downloaded');
+            }
             
             this.hideLoading();
-            this.updateStatus('STL export completed');
         } catch (error) {
             this.hideLoading();
             this.showError('Export Error', error.message);
@@ -563,16 +630,58 @@ class CodeCADApp {
         try {
             this.showLoading('Exporting STEP...');
             
-            const geometryData = this.viewer3D.getGeometryData();
-            if (!geometryData || geometryData.length === 0) {
+            const meshData = this.viewer3D.getMeshData();
+            if (!meshData || meshData.length === 0) {
                 throw new Error('No 3D objects to export');
             }
             
-            // TODO: Implement STEP export
-            console.log('STEP export not yet implemented');
+            // Show save dialog
+            if (window.electronAPI) {
+                const result = await window.electronAPI.showSaveDialog({
+                    lastUsedDirectory: this.fileManager.getLastUsedDirectory(),
+                    filters: [
+                        { name: 'STEP Files', extensions: ['stp', 'step'] },
+                        { name: 'All Files', extensions: ['*'] }
+                    ]
+                });
+                
+                if (result.success && result.filePath) {
+                    // Create STEP exporter
+                    const exporter = new STEPExporter();
+                    
+                    // Export as STEP
+                    const stepData = exporter.export(meshData, { 
+                        name: 'CodeCAD_Export' 
+                    });
+                    
+                    // Send to main process for file writing
+                    const exportResult = await window.electronAPI.exportSTEP({
+                        filePath: result.filePath,
+                        stepData: stepData
+                    });
+                    
+                    if (exportResult.success) {
+                        // Update last used directory
+                        if (result.directory) {
+                            this.fileManager.setLastUsedDirectory(result.directory);
+                        }
+                        this.updateStatus(`STEP exported to: ${result.filePath}`);
+                    } else {
+                        throw new Error(exportResult.error);
+                    }
+                } else {
+                    this.updateStatus('STEP export cancelled');
+                }
+            } else {
+                // Fallback for web environment - download directly
+                const exporter = new STEPExporter();
+                exporter.exportToFile(meshData, 'export.stp', { 
+                    name: 'CodeCAD_Export' 
+                });
+                this.updateStatus('STEP downloaded');
+            }
             
             this.hideLoading();
-            this.updateStatus('STEP export completed');
         } catch (error) {
             this.hideLoading();
             this.showError('Export Error', error.message);

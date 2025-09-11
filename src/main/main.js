@@ -84,8 +84,20 @@ function createMenu() {
           label: 'Open',
           accelerator: 'CmdOrCtrl+O',
           click: async () => {
+            // Get last used directory from renderer
+            let defaultPath = path.join(require('os').homedir(), 'Documents');
+            try {
+              const lastDirResult = await mainWindow.webContents.executeJavaScript('localStorage.getItem("code-cad-last-directory")');
+              if (lastDirResult && fs.existsSync(lastDirResult)) {
+                defaultPath = lastDirResult;
+              }
+            } catch (error) {
+              // Ignore error, use default
+            }
+            
             const result = await dialog.showOpenDialog(mainWindow, {
               properties: ['openFile'],
+              defaultPath: defaultPath,
               filters: [
                 { name: 'CAD Scripts', extensions: ['js', 'scad', 'cad'] },
                 { name: 'All Files', extensions: ['*'] }
@@ -110,7 +122,19 @@ function createMenu() {
           label: 'Save As',
           accelerator: 'CmdOrCtrl+Shift+S',
           click: async () => {
+            // Get last used directory from renderer
+            let defaultPath = path.join(require('os').homedir(), 'Documents');
+            try {
+              const lastDirResult = await mainWindow.webContents.executeJavaScript('localStorage.getItem("code-cad-last-directory")');
+              if (lastDirResult && fs.existsSync(lastDirResult)) {
+                defaultPath = lastDirResult;
+              }
+            } catch (error) {
+              // Ignore error, use default
+            }
+            
             const result = await dialog.showSaveDialog(mainWindow, {
+              defaultPath: defaultPath,
               filters: [
                 { name: 'CAD Scripts', extensions: ['js', 'scad', 'cad'] },
                 { name: 'All Files', extensions: ['*'] }
@@ -263,17 +287,47 @@ ipcMain.handle('read-file', async (event, filePath) => {
   }
 });
 
-ipcMain.handle('show-save-dialog', async (event) => {
+ipcMain.handle('show-save-dialog', async (event, options = {}) => {
   try {
-    const result = await dialog.showSaveDialog(mainWindow, {
+    const defaultOptions = {
       filters: [
         { name: 'CAD Scripts', extensions: ['js', 'ts', 'scad', 'cad'] },
         { name: 'All Files', extensions: ['*'] }
       ]
-    });
+    };
+    
+    // Get last used directory from localStorage if available
+    let defaultPath = null;
+    try {
+      const lastDir = options.lastUsedDirectory;
+      if (lastDir && fs.existsSync(lastDir)) {
+        defaultPath = lastDir;
+      }
+    } catch (error) {
+      // Ignore error, use default
+    }
+    
+    // If no valid last directory, use Documents folder
+    if (!defaultPath) {
+      defaultPath = path.join(require('os').homedir(), 'Documents');
+    }
+    
+    const dialogOptions = { 
+      ...defaultOptions, 
+      ...options,
+      defaultPath: defaultPath
+    };
+    
+    const result = await dialog.showSaveDialog(mainWindow, dialogOptions);
     
     if (!result.canceled) {
-      return { success: true, filePath: result.filePath };
+      // Update last used directory
+      const selectedDir = path.dirname(result.filePath);
+      return { 
+        success: true, 
+        filePath: result.filePath,
+        directory: selectedDir
+      };
     } else {
       return { success: false, canceled: true };
     }
@@ -282,19 +336,48 @@ ipcMain.handle('show-save-dialog', async (event) => {
   }
 });
 
-ipcMain.handle('export-stl', async (event, { filePath, meshData }) => {
+ipcMain.handle('export-stl', async (event, { filePath, stlData, isBinary = true }) => {
   try {
-    // TODO: Implement STL export
-    return { success: true };
+    if (!filePath || !stlData) {
+      throw new Error('File path and STL data are required');
+    }
+
+    // Write STL data to file
+    if (isBinary) {
+      // For binary data, we need to handle it as a buffer
+      const buffer = Buffer.from(stlData);
+      fs.writeFileSync(filePath, buffer);
+    } else {
+      // For ASCII data, write as text
+      fs.writeFileSync(filePath, stlData, 'utf8');
+    }
+
+    return { success: true, filePath };
   } catch (error) {
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('export-step', async (event, { filePath, geometryData }) => {
+ipcMain.handle('export-step', async (event, { filePath, stepData }) => {
   try {
-    // TODO: Implement STEP export
-    return { success: true };
+    if (!filePath || !stepData) {
+      throw new Error('File path and STEP data are required');
+    }
+
+    // Write STEP data to file as text
+    fs.writeFileSync(filePath, stepData, 'utf8');
+
+    return { success: true, filePath };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Get user's Documents directory
+ipcMain.handle('get-user-documents-path', async (event) => {
+  try {
+    const documentsPath = path.join(require('os').homedir(), 'Documents');
+    return { success: true, path: documentsPath };
   } catch (error) {
     return { success: false, error: error.message };
   }

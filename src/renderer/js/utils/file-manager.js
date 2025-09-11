@@ -3,6 +3,42 @@ export class FileManager {
     constructor() {
         this.currentFile = null;
         this.isDirty = false;
+        this.lastUsedDirectory = null;
+        this.loadLastUsedDirectory();
+        this.initializeLastUsedDirectory();
+    }
+
+    async initializeLastUsedDirectory() {
+        try {
+            // Get user's Documents folder as default
+            if (window.electronAPI) {
+                const result = await window.electronAPI.getUserDocumentsPath();
+                if (result.success) {
+                    this.lastUsedDirectory = result.path;
+                }
+            }
+        } catch (error) {
+            console.warn('Could not get Documents path:', error);
+        }
+    }
+
+    getLastUsedDirectory() {
+        return this.lastUsedDirectory;
+    }
+
+    setLastUsedDirectory(directory) {
+        this.lastUsedDirectory = directory;
+        // Store in localStorage for persistence
+        if (directory) {
+            localStorage.setItem('code-cad-last-directory', directory);
+        }
+    }
+
+    loadLastUsedDirectory() {
+        const stored = localStorage.getItem('code-cad-last-directory');
+        if (stored) {
+            this.lastUsedDirectory = stored;
+        }
     }
 
     async readFile(file) {

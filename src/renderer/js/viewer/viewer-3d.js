@@ -516,7 +516,8 @@ export class Viewer3D {
                     );
                 }
 
-                // Add to scene
+                // Mark as CAD object and add to scene
+                mesh.userData.isCADObject = true;
                 this.scene.add(mesh);
                 this.objects.push(mesh);
             }
@@ -752,16 +753,8 @@ export class Viewer3D {
     }
 
     getMeshData() {
-        // Return mesh data for export
-        return this.objects
-            .filter(obj => obj.userData.isCADObject)
-            .map(obj => ({
-                geometry: obj.geometry,
-                material: obj.material,
-                position: obj.position,
-                rotation: obj.rotation,
-                scale: obj.scale
-            }));
+        // Return mesh data for export - return the actual Three.js mesh objects
+        return this.objects.filter(obj => obj.userData.isCADObject);
     }
 
     getGeometryData() {
@@ -888,13 +881,8 @@ export class Viewer3D {
         // Create end cap geometries
         const endCapGeometry = this.createEndCaps(points, angle, segments);
         
-        // Combine geometries using BufferGeometryUtils (if available) or manual merging
-        if (window.THREE && THREE.BufferGeometryUtils) {
-            return THREE.BufferGeometryUtils.mergeGeometries([latheGeometry, endCapGeometry]);
-        } else {
-            // Manual geometry merging
-            return this.mergeGeometries([latheGeometry, endCapGeometry]);
-        }
+        // Manual geometry merging
+        return this.mergeGeometries([latheGeometry, endCapGeometry]);
     }
 
     createEndCaps(points, angle, segments) {
