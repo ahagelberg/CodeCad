@@ -518,8 +518,16 @@ class CodeCADApp {
                 this.updateFileInfo(filePath);
                 this.updateStatus('File saved');
             } else {
-                // This will be handled by the menu system
-                console.log('Save as dialog should be triggered by menu');
+                // Show save dialog
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.showSaveDialog();
+                    if (result.success) {
+                        await this.saveAsFile(result.filePath);
+                    }
+                } else {
+                    // Fallback for web environment
+                    this.fileManager.downloadFile(content, 'untitled.js');
+                }
             }
         } catch (error) {
             this.showError('Save File Error', error.message);

@@ -214,15 +214,38 @@ export class JavaScriptEngine extends BaseEngine {
 
     createSandbox() {
         const sandbox = {
-            // CAD commands
+            // 3D CAD commands
             cube: (...args) => this.createCube(...args),
             sphere: (...args) => this.createSphere(...args),
             cylinder: (...args) => this.createCylinder(...args),
             
-            // Transformations
-            translate: (vector, object) => this.translate(vector, object),
-            rotate: (angles, object) => this.rotate(angles, object),
-            scale: (factors, object) => this.scale(factors, object),
+            // 2D CAD commands
+            square: (...args) => this.createRectangle(...args),
+            rectangle: (...args) => this.createRectangle(...args),
+            circle: (...args) => this.createCircle(...args),
+            polygon: (...args) => this.createPolygon(...args),
+            arc: (...args) => this.createArc(...args),
+            line: (...args) => this.createLine(...args),
+            
+            // Extrusion commands
+            linear_extrude: (...args) => this.linearExtrude(...args),
+            rotate_extrude: (...args) => this.rotateExtrude(...args),
+            
+            // 2D Operations
+            offset: (...args) => this.offset(...args),
+            fillet: (...args) => this.fillet(...args),
+            chamfer: (...args) => this.chamfer(...args),
+            
+            // Transformations - modify objects in place
+            translate: (object, vector) => {
+                return this.translate(object, vector);
+            },
+            rotate: (object, angles) => {
+                return this.rotate(object, angles);
+            },
+            scale: (object, factors) => {
+                return this.scale(object, factors);
+            },
             
             // Boolean operations
             union: (objects) => this.union(objects),
@@ -274,34 +297,90 @@ export class JavaScriptEngine extends BaseEngine {
 
 
     // Override CAD command methods to add geometry to generatedGeometry array
-    createCube(size = [1, 1, 1], position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1]) {
-        console.log('createCube called with:', { size, position, rotation, scale });
-        const cube = super.createCube(size, position, rotation, scale);
+    createCube(size = [1, 1, 1]) {
+        console.log('createCube called with:', { size });
+        const cube = super.createCube(size);
         console.log('createCube returning:', cube);
         this.generatedGeometry.push(cube);
         console.log('generatedGeometry now has', this.generatedGeometry.length, 'items');
         return cube;
     }
 
-    createSphere(radius = 1, segments = 32, position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1]) {
-        const sphere = super.createSphere(radius, segments, position, rotation, scale);
+    createSphere(radius = 1, segments = 32) {
+        const sphere = super.createSphere(radius, segments);
         this.generatedGeometry.push(sphere);
         return sphere;
     }
 
-    createCylinder(radius = 1, height = 2, segments = 32, position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1]) {
-        const cylinder = super.createCylinder(radius, height, segments, position, rotation, scale);
+    createCylinder(radius = 1, height = 2, segments = 32) {
+        const cylinder = super.createCylinder(radius, height, segments);
         this.generatedGeometry.push(cylinder);
         return cylinder;
     }
 
-    // Override translate to add debug logging
-    translate(vector, object) {
-        console.log('translate called with:', { vector, object });
-        const result = super.translate(vector, object);
-        console.log('translate returning:', result);
-        return result;
+    // Override 2D primitive methods to add geometry to generatedGeometry array
+    createRectangle(width = 1, height = 1) {
+        const rectangle = super.createRectangle(width, height);
+        this.generatedGeometry.push(rectangle);
+        return rectangle;
     }
+
+    createCircle(radius = 1, segments = 32) {
+        const circle = super.createCircle(radius, segments);
+        this.generatedGeometry.push(circle);
+        return circle;
+    }
+
+    createPolygon(points = [[0, 0], [1, 0], [0.5, 1]]) {
+        const polygon = super.createPolygon(points);
+        this.generatedGeometry.push(polygon);
+        return polygon;
+    }
+
+    createArc(radius = 1, startAngle = 0, endAngle = Math.PI, segments = 32) {
+        const arc = super.createArc(radius, startAngle, endAngle, segments);
+        this.generatedGeometry.push(arc);
+        return arc;
+    }
+
+    createLine(startPoint = [0, 0], endPoint = [1, 0]) {
+        const line = super.createLine(startPoint, endPoint);
+        this.generatedGeometry.push(line);
+        return line;
+    }
+
+    // Override extrusion methods
+    linearExtrude(shape, height = 1, twist = 0, slices = 1, center = false) {
+        const extruded = super.linearExtrude(shape, height, twist, slices, center);
+        this.generatedGeometry.push(extruded);
+        return extruded;
+    }
+
+    rotateExtrude(shape, angle = 2 * Math.PI, segments = 32) {
+        const rotated = super.rotateExtrude(shape, angle, segments);
+        this.generatedGeometry.push(rotated);
+        return rotated;
+    }
+
+    // Override 2D operation methods
+    offset(shape, distance = 0.1, joinType = 'round', miterLimit = 1) {
+        const offset = super.offset(shape, distance, joinType, miterLimit);
+        this.generatedGeometry.push(offset);
+        return offset;
+    }
+
+    fillet(shape, radius = 0.1) {
+        const fillet = super.fillet(shape, radius);
+        this.generatedGeometry.push(fillet);
+        return fillet;
+    }
+
+    chamfer(shape, distance = 0.1) {
+        const chamfer = super.chamfer(shape, distance);
+        this.generatedGeometry.push(chamfer);
+        return chamfer;
+    }
+
 
     async validate(script) {
         try {

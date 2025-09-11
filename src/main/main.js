@@ -87,7 +87,7 @@ function createMenu() {
             const result = await dialog.showOpenDialog(mainWindow, {
               properties: ['openFile'],
               filters: [
-                { name: 'CAD Scripts', extensions: ['js', 'ts', 'scad', 'cad'] },
+                { name: 'CAD Scripts', extensions: ['js', 'scad', 'cad'] },
                 { name: 'All Files', extensions: ['*'] }
               ]
             });
@@ -112,7 +112,7 @@ function createMenu() {
           click: async () => {
             const result = await dialog.showSaveDialog(mainWindow, {
               filters: [
-                { name: 'CAD Scripts', extensions: ['js', 'ts', 'scad', 'cad'] },
+                { name: 'CAD Scripts', extensions: ['js', 'scad', 'cad'] },
                 { name: 'All Files', extensions: ['*'] }
               ]
             });
@@ -258,6 +258,25 @@ ipcMain.handle('read-file', async (event, filePath) => {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     return { success: true, content };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('show-save-dialog', async (event) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      filters: [
+        { name: 'CAD Scripts', extensions: ['js', 'ts', 'scad', 'cad'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+    
+    if (!result.canceled) {
+      return { success: true, filePath: result.filePath };
+    } else {
+      return { success: false, canceled: true };
+    }
   } catch (error) {
     return { success: false, error: error.message };
   }

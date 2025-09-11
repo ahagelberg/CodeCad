@@ -173,16 +173,48 @@
     <!-- Script templates -->
     <script type="text/template" id="template-javascript">
 // JavaScript CAD Script
-// Create a simple cube
+// 3D Primitives
 const myCube = cube([10, 10, 10]);
-translate([0, 0, 5])(myCube);
+const mySphere = sphere(5);
+const myCylinder = cylinder(3, 8);
+
+// 2D Shapes
+const myRectangle = rectangle(8, 6);
+const myCircle = circle(4);
+const myPolygon = polygon([[0, 0], [4, 0], [2, 4]]);
+
+// Extrusion
+const extrudedRect = linear_extrude(myRectangle, 5);
+const rotatedShape = rotate_extrude(myCircle, 2 * Math.PI);
+
+// Transformations
+translate(mySphere, [15, 0, 0]);
+rotate(myCube, [0, 0, Math.PI/4]);
+scale(myCylinder, [2, 1, 1]);
     </script>
 
     <script type="text/template" id="template-openscad">
 // OpenSCAD Script
-// Create a simple cube
+// 3D Primitives
 cube([10, 10, 10]);
-translate([0, 0, 5]) cube([10, 10, 10]);
+sphere(r=5);
+cylinder(r=3, h=8);
+
+// 2D Shapes
+square([8, 6]);
+circle(r=4);
+polygon(points=[[0, 0], [4, 0], [2, 4]]);
+
+// Extrusion
+linear_extrude(height=5) square([8, 6]);
+rotate_extrude() circle(r=4);
+
+        // Combine objects
+        union() {
+            cube([10, 10, 10]);
+            translate(sphere(r=5), [15, 0, 0]);
+            rotate(cube([5, 5, 5]), [0, 0, 45]);
+        }
     </script>
 </body>
 </html>
