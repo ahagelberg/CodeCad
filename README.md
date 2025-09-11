@@ -2,6 +2,10 @@
 
 A cross-platform CAD application with modular scripting language support, built with Electron and Three.js.
 
+## Rationale ##
+
+I really like the idea behind OpenSCAD, creating 3D models using a simple script language. However everytime I'm using it I'm dissappointed by the limited and poorly implemented script language. My main gripe is that it lacks true variables, something that is vital for creating complex models. Therefore I've decided to make my own scripted CAD program that uses a more flexible and fully featured language. I chose JavaScipt because of ease of implementation and that it is very popular. I've made the program flexible enough that other language might be added in the future. I've added rudimentary support for OpenSCAD scripts as well to make it easy for people to shift over.
+
 ## Features
 
 - **Multi-Language Support**: JavaScript, TypeScript, and OpenSCAD scripting
@@ -162,3 +166,4 @@ MIT License - see LICENSE file for details
 - [ ] Animation support
 - [ ] Plugin system
 - [ ] Cloud integration
+
