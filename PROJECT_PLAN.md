@@ -331,6 +331,141 @@ code-cad/
 - Successful app bundling and distribution
 - Modular architecture allows easy addition of new scripting languages
 
+## Comprehensive CAD Command Reference
+
+### Core 3D Primitives
+- **`cube(size, center)`** - Create rectangular box
+- **`sphere(radius, segments)`** - Create sphere
+- **`cylinder(height, radius, segments, center)`** - Create cylinder
+- **`cone(height, radius1, radius2, segments)`** - Create cone/frustum
+- **`polyhedron(points, faces, convexity)`** - Create custom polyhedron
+- **`torus(major_radius, minor_radius, segments)`** - Create torus
+- **`pyramid(base_size, height, segments)`** - Create pyramid
+
+### 2D Primitives
+- **`rectangle(width, height, center)`** - Create rectangle
+- **`circle(radius, segments)`** - Create circle
+- **`polygon(points, paths, convexity)`** - Create polygon
+- **`arc(radius, start_angle, end_angle, segments)`** - Create arc
+- **`line(start_point, end_point, width)`** - Create line
+- **`ellipse(width, height, segments)`** - Create ellipse
+- **`text(text, size, font, halign, valign)`** - Create 2D text
+
+### Transformations
+- **`translate(object, vector)`** - Move object by vector
+- **`rotate(object, angles)`** - Rotate object by angles
+- **`scale(object, factors)`** - Scale object by factors
+- **`mirror(object, vector)`** - Mirror object across plane
+- **`resize(object, new_size, auto)`** - Resize object
+- **`multmatrix(object, matrix)`** - Apply transformation matrix
+- **`color(object, color)`** - Set object color
+- **`copy(object)`** - Create a copy of an object
+
+### Boolean Operations
+- **`union(objects)`** - Combine objects (A ∪ B)
+- **`difference(object, subtract_objects)`** - Subtract objects (A - B)
+- **`intersection(objects)`** - Intersect objects (A ∩ B)
+- **`hull(objects)`** - Create convex hull
+- **`minkowski(object, sum_object)`** - Minkowski sum
+
+### Extrusion Operations
+- **`linear_extrude(shape, height, center, twist, slices)`** - Linear extrusion
+- **`rotate_extrude(shape, angle, segments)`** - Rotational extrusion
+- **`sweep(shape, path, scale)`** - Path-based extrusion
+- **`loft(shapes, smooth)`** - Loft between 2D shapes
+
+### 2D Operations
+- **`offset(shape, distance, chamfer)`** - Offset 2D shape
+- **`fillet(shape, radius)`** - Add fillets to corners
+- **`chamfer(shape, distance)`** - Add chamfers to corners
+- **`projection(shape, cut)`** - Project 3D to 2D
+
+### Advanced Operations
+- **`surface(file, center, invert)`** - Create surface from heightmap
+- **`import(file, convexity)`** - Import external files (STL, DXF, SVG)
+- **`render(object, convexity)`** - Force rendering of object
+- **`preview(object)`** - Preview object (wireframe)
+
+### Mathematical Functions
+- **Arithmetic**: `+`, `-`, `*`, `/`, `%`, `^`
+- **Comparison**: `<`, `<=`, `==`, `!=`, `>=`, `>`
+- **Logical**: `&&`, `||`, `!`
+- **Math**: `abs()`, `ceil()`, `floor()`, `round()`, `min()`, `max()`
+- **Trigonometry**: `sin()`, `cos()`, `tan()`, `asin()`, `acos()`, `atan()`, `atan2()`
+- **Other**: `sqrt()`, `pow()`, `exp()`, `log()`, `len()`, `str()`
+
+### Control Structures
+- **`if (condition) { ... } else { ... }`** - Conditional execution
+- **`for (i = [start:step:end]) { ... }`** - For loops
+- **`while (condition) { ... }`** - While loops
+- **`each (list) { ... }`** - Iterate over list
+- **`let (assignments) { ... }`** - Local variables
+
+### Modules and Functions
+- **`module name(parameters) { ... }`** - Define reusable modules
+- **`function name(parameters) = expression;`** - Define functions
+- **`include <file>`** - Include external files
+- **`use <file>`** - Use modules from file
+
+### File Operations
+- **`import(file)`** - Import STL, DXF, SVG files
+- **`export_stl(object, filename)`** - Export to STL
+- **`export_step(object, filename)`** - Export to STEP
+- **`export_obj(object, filename)`** - Export to OBJ
+- **`export_dxf(object, filename)`** - Export to DXF
+- **`export_svg(object, filename)`** - Export to SVG
+
+### Special Variables
+- **`$fn`** - Number of fragments for circles
+- **`$fa`** - Minimum angle for fragments
+- **`$fs`** - Minimum size for fragments
+- **`$t`** - Animation time (0-1)
+- **`$vpr`** - Viewport rotation
+- **`$vpt`** - Viewport translation
+- **`$vpd`** - Viewport distance
+
+### Utility Functions
+- **`echo(expression)`** - Print debug information
+- **`assert(condition, message)`** - Assert conditions
+- **`version()`** - Get version information
+- **`version_num()`** - Get version number
+- **`norm(vector)`** - Vector length
+- **`cross(vector1, vector2)`** - Cross product
+- **`dot(vector1, vector2)`** - Dot product
+
+## Implementation Priority
+
+### Phase 1: Core Primitives (Completed)
+- ✅ 3D primitives: cube, sphere, cylinder
+- ✅ 2D primitives: rectangle, circle, polygon, arc, line
+- ✅ Basic transformations: translate, rotate, scale
+
+### Phase 2: Extrusion & 2D Operations (Completed)
+- ✅ Linear and rotational extrusion
+- ✅ 2D operations: offset, fillet, chamfer
+
+### Phase 3: Boolean Operations (Next)
+- 🔄 Union, difference, intersection
+- 🔄 Hull and minkowski operations
+
+### Phase 4: Advanced Features
+- 📋 Advanced primitives: cone, torus, polyhedron
+- 📋 Text rendering and font support
+- 📋 Import/export functionality
+- 📋 Advanced transformations: mirror, resize, multmatrix
+
+### Phase 5: Programming Features
+- 📋 Variables and expressions
+- 📋 Control structures: if, for, while
+- 📋 Modules and functions
+- 📋 File includes and libraries
+
+### Phase 6: Polish & Export
+- 📋 Complete export system (STL, STEP, OBJ, DXF, SVG)
+- 📋 Advanced rendering options
+- 📋 Performance optimizations
+- 📋 Error handling and debugging
+
 ## Future Enhancements
 - **Additional Language Engines**: Python (Pyodide), Lua, Rust (WebAssembly)
 - **Advanced Materials and Textures**: Enhanced rendering capabilities
