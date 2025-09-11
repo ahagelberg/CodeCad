@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // File operations
   saveFile: (filePath, content) => ipcRenderer.invoke('save-file', { filePath, content }),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
+  showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
   getUserDocumentsPath: () => ipcRenderer.invoke('get-user-documents-path'),
   

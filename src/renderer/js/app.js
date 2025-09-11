@@ -470,19 +470,43 @@ class CodeCADApp {
 
     async openFile() {
         try {
-            // This will be handled by the menu system
-            // For now, we'll create a simple file input
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.js,.ts,.scad,.cad';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const content = await this.fileManager.readFile(file);
-                    this.loadScript(content, file.name);
+            if (window.electronAPI) {
+                // Use Electron API to show open dialog
+                const result = await window.electronAPI.showOpenDialog({
+                    lastUsedDirectory: this.fileManager.getLastUsedDirectory()
+                });
+                if (result.success && result.filePath) {
+                    const content = await this.fileManager.readFile(result.filePath);
+                    this.currentFile = result.filePath;
+                    this.fileManager.setCurrentFile(result.filePath);
+                    this.loadScript(content, result.filePath);
+                    this.updateFileInfo(result.filePath);
+                    
+                    // Update last used directory
+                    if (result.directory) {
+                        this.fileManager.setLastUsedDirectory(result.directory);
+                    }
+                    
+                    this.updateStatus('File opened');
                 }
-            };
-            input.click();
+            } else {
+                // Fallback for web environment - use file input
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.js,.ts,.scad,.cad';
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const content = await this.fileManager.readFile(file);
+                        // For web environment, we can only use the filename
+                        this.currentFile = file.name;
+                        this.fileManager.setCurrentFile(file.name);
+                        this.loadScript(content, file.name);
+                        this.updateFileInfo(file.name);
+                    }
+                };
+                input.click();
+            }
         } catch (error) {
             this.showError('Open File Error', error.message);
         }
@@ -491,6 +515,7 @@ class CodeCADApp {
     async openFileFromMenu(data) {
         try {
             this.currentFile = data.filePath;
+            this.fileManager.setCurrentFile(data.filePath);
             this.loadScript(data.content, data.filePath);
             this.updateFileInfo(data.filePath);
             
@@ -511,8 +536,14 @@ class CodeCADApp {
             const content = this.editorManager.getContent();
             
             if (this.currentFile) {
-                await this.fileManager.saveFile(this.currentFile, content);
-                this.updateStatus('File saved');
+                try {
+                    await this.fileManager.saveFile(this.currentFile, content);
+                    this.updateStatus('File saved');
+                } catch (saveError) {
+                    // If save fails (e.g., read-only file, invalid path), show save as dialog
+                    console.log('Direct save failed, showing save dialog:', saveError.message);
+                    this.saveAsFile();
+                }
             } else {
                 // Trigger save as dialog
                 this.saveAsFile();
@@ -529,6 +560,7 @@ class CodeCADApp {
             if (filePath) {
                 await this.fileManager.saveFile(filePath, content);
                 this.currentFile = filePath;
+                this.fileManager.setCurrentFile(filePath);
                 this.updateFileInfo(filePath);
                 
                 // Update last used directory

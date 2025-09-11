@@ -287,6 +287,56 @@ ipcMain.handle('read-file', async (event, filePath) => {
   }
 });
 
+ipcMain.handle('show-open-dialog', async (event, options = {}) => {
+  try {
+    const defaultOptions = {
+      properties: ['openFile'],
+      filters: [
+        { name: 'CAD Scripts', extensions: ['js', 'ts', 'scad', 'cad'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    };
+    
+    // Get last used directory from localStorage if available
+    let defaultPath = null;
+    try {
+      const lastDir = options.lastUsedDirectory;
+      if (lastDir && fs.existsSync(lastDir)) {
+        defaultPath = lastDir;
+      }
+    } catch (error) {
+      // Ignore error, use default
+    }
+    
+    // If no valid last directory, use Documents folder
+    if (!defaultPath) {
+      defaultPath = path.join(require('os').homedir(), 'Documents');
+    }
+    
+    const dialogOptions = { 
+      ...defaultOptions, 
+      ...options,
+      defaultPath: defaultPath
+    };
+    
+    const result = await dialog.showOpenDialog(mainWindow, dialogOptions);
+    
+    if (!result.canceled && result.filePaths.length > 0) {
+      const filePath = result.filePaths[0];
+      const selectedDir = path.dirname(filePath);
+      return { 
+        success: true, 
+        filePath: filePath,
+        directory: selectedDir
+      };
+    } else {
+      return { success: false, canceled: true };
+    }
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('show-save-dialog', async (event, options = {}) => {
   try {
     const defaultOptions = {

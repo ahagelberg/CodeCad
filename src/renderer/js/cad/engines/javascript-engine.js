@@ -16,6 +16,7 @@ export class JavaScriptEngine extends BaseEngine {
         this.addAlias('move', 'translate');
         this.addAlias('square', 'rectangle');
         this.addAlias('box', 'cube');
+        this.addAlias('export_model', 'export_file');
     }
 
     initializeCommands() {
@@ -116,16 +117,17 @@ export class JavaScriptEngine extends BaseEngine {
             example: 'intersection([cube([10, 10, 10]), sphere(5)])'
         });
 
-        this.commands.set('export', {
+        this.commands.set('export_file', {
             description: 'Export geometry to file',
-            syntax: 'export(filename, format, overwrite)',
+            syntax: 'export_file(filename, format, overwrite)',
             parameters: [
                 { name: 'filename', type: 'string', description: 'Output filename' },
                 { name: 'format', type: 'string', description: 'Export format (stl, step)', optional: true },
                 { name: 'overwrite', type: 'boolean', description: 'Overwrite existing files', optional: true }
             ],
-            example: 'export("my_model.stl", "stl", true)'
+            example: 'export_file("my_model.stl", "stl", true)'
         });
+
     }
 
     async execute(script) {
@@ -277,7 +279,7 @@ export class JavaScriptEngine extends BaseEngine {
             intersection: (objects) => this.intersection(objects),
             
             // Export command
-            export: (filename, format = 'stl', overwrite = false) => this.exportGeometry(filename, format, overwrite),
+            export_file: (filename, format = 'stl', overwrite = false) => this.exportGeometry(filename, format, overwrite),
             
             // Math functions
             Math: Math,
@@ -555,4 +557,5 @@ export class JavaScriptEngine extends BaseEngine {
             throw error;
         }
     }
+
 }
