@@ -115,6 +115,17 @@ export class JavaScriptEngine extends BaseEngine {
             ],
             example: 'intersection([cube([10, 10, 10]), sphere(5)])'
         });
+
+        this.commands.set('export', {
+            description: 'Export geometry to file',
+            syntax: 'export(filename, format, overwrite)',
+            parameters: [
+                { name: 'filename', type: 'string', description: 'Output filename' },
+                { name: 'format', type: 'string', description: 'Export format (stl, step)', optional: true },
+                { name: 'overwrite', type: 'boolean', description: 'Overwrite existing files', optional: true }
+            ],
+            example: 'export("my_model.stl", "stl", true)'
+        });
     }
 
     async execute(script) {
@@ -264,6 +275,9 @@ export class JavaScriptEngine extends BaseEngine {
             union: (objects) => this.union(objects),
             difference: (objects) => this.difference(objects),
             intersection: (objects) => this.intersection(objects),
+            
+            // Export command
+            export: (filename, format = 'stl', overwrite = false) => this.exportGeometry(filename, format, overwrite),
             
             // Math functions
             Math: Math,
@@ -427,5 +441,118 @@ export class JavaScriptEngine extends BaseEngine {
     extractLineNumber(errorMessage) {
         const match = errorMessage.match(/line (\d+)/);
         return match ? parseInt(match[1]) : null;
+    }
+
+    async exportGeometry(filename, format = 'stl', overwrite = false) {
+        try {
+            // Validate filename
+            if (!filename || typeof filename !== 'string') {
+                throw new Error('Export filename must be a non-empty string');
+            }
+
+            // Normalize format (case insensitive)
+            const normalizedFormat = format.toLowerCase().trim();
+            
+            // Validate format
+            if (!['stl', 'step'].includes(normalizedFormat)) {
+                throw new Error('Export format must be "stl" or "step"');
+            }
+
+            // Check if we have geometry to export
+            if (!this.generatedGeometry || this.generatedGeometry.length === 0) {
+                throw new Error('No geometry to export. Create some objects first.');
+            }
+
+            // Get the current mesh data from the viewer
+            // We need to access the viewer through the app instance
+            const app = window.app;
+            if (!app || !app.viewer3D) {
+                throw new Error('Cannot access 3D viewer for export');
+            }
+
+            const meshData = app.viewer3D.getMeshData();
+            if (!meshData || meshData.length === 0) {
+                throw new Error('No 3D objects available for export');
+            }
+
+            // Check file existence if overwrite is false
+            if (!overwrite && window.electronAPI) {
+                try {
+                    // We'll let the main process handle file existence checking
+                    // For now, we'll skip this check and let the export proceed
+                    // The main process can handle overwrite logic
+                    console.log(`[CAD Script] Exporting to: ${filename} (overwrite: ${overwrite})`);
+                } catch (error) {
+                    // If we can't check file existence, continue with export
+                    console.log('Could not check file existence:', error.message);
+                }
+            }
+
+            // Perform the export based on format
+            if (normalizedFormat === 'stl') {
+                const { STLExporter } = await import('../../utils/stl-exporter.js');
+                const exporter = new STLExporter();
+                const stlData = exporter.export(meshData, { 
+                    binary: true, 
+                    name: 'CodeCAD_Export' 
+                });
+
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.exportSTL({
+                        filePath: filename,
+                        stlData: stlData,
+                        isBinary: true,
+                        overwrite: overwrite
+                    });
+
+                    if (!result.success) {
+                        throw new Error(result.error);
+                    }
+                } else {
+                    // Fallback for web environment
+                    exporter.exportToFile(meshData, filename, { 
+                        name: 'CodeCAD_Export' 
+                    });
+                }
+
+            } else if (normalizedFormat === 'step') {
+                const { STEPExporter } = await import('../../utils/step-exporter.js');
+                const exporter = new STEPExporter();
+                const stepData = exporter.export(meshData, { 
+                    name: 'CodeCAD_Export' 
+                });
+
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.exportSTEP({
+                        filePath: filename,
+                        stepData: stepData,
+                        overwrite: overwrite
+                    });
+
+                    if (!result.success) {
+                        throw new Error(result.error);
+                    }
+                } else {
+                    // Fallback for web environment
+                    exporter.exportToFile(meshData, filename, { 
+                        name: 'CodeCAD_Export' 
+                    });
+                }
+            }
+
+            // Log success message
+            console.log(`[CAD Script] Successfully exported ${normalizedFormat.toUpperCase()} file: ${filename}`);
+            
+            return {
+                success: true,
+                filename: filename,
+                format: normalizedFormat,
+                message: `Exported ${normalizedFormat.toUpperCase()} file: ${filename}`
+            };
+
+        } catch (error) {
+            console.log(`[CAD Script] Export failed: ${error.message}`);
+            throw error;
+        }
     }
 }

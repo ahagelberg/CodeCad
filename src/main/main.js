@@ -336,10 +336,15 @@ ipcMain.handle('show-save-dialog', async (event, options = {}) => {
   }
 });
 
-ipcMain.handle('export-stl', async (event, { filePath, stlData, isBinary = true }) => {
+ipcMain.handle('export-stl', async (event, { filePath, stlData, isBinary = true, overwrite = false }) => {
   try {
     if (!filePath || !stlData) {
       throw new Error('File path and STL data are required');
+    }
+
+    // Check if file exists and overwrite is false
+    if (!overwrite && fs.existsSync(filePath)) {
+      throw new Error(`File "${filePath}" already exists. Use overwrite=true to replace it.`);
     }
 
     // Write STL data to file
@@ -358,10 +363,15 @@ ipcMain.handle('export-stl', async (event, { filePath, stlData, isBinary = true 
   }
 });
 
-ipcMain.handle('export-step', async (event, { filePath, stepData }) => {
+ipcMain.handle('export-step', async (event, { filePath, stepData, overwrite = false }) => {
   try {
     if (!filePath || !stepData) {
       throw new Error('File path and STEP data are required');
+    }
+
+    // Check if file exists and overwrite is false
+    if (!overwrite && fs.existsSync(filePath)) {
+      throw new Error(`File "${filePath}" already exists. Use overwrite=true to replace it.`);
     }
 
     // Write STEP data to file as text
