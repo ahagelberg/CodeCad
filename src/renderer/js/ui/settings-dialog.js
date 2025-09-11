@@ -72,11 +72,45 @@ export class SettingsDialog {
                                     </div>
                                     <div class="setting-item">
                                         <label for="font-size">Font Size:</label>
-                                        <input type="number" id="font-size" class="setting-input" min="8" max="32">
+                                        <select id="font-size" class="setting-select">
+                                            <option value="8">8px</option>
+                                            <option value="9">9px</option>
+                                            <option value="10">10px</option>
+                                            <option value="11">11px</option>
+                                            <option value="12">12px</option>
+                                            <option value="13">13px</option>
+                                            <option value="14">14px</option>
+                                            <option value="15">15px</option>
+                                            <option value="16">16px</option>
+                                            <option value="17">17px</option>
+                                            <option value="18">18px</option>
+                                            <option value="19">19px</option>
+                                            <option value="20">20px</option>
+                                            <option value="22">22px</option>
+                                            <option value="24">24px</option>
+                                            <option value="26">26px</option>
+                                            <option value="28">28px</option>
+                                            <option value="30">30px</option>
+                                        </select>
                                     </div>
                                     <div class="setting-item">
                                         <label for="font-family">Font Family:</label>
-                                        <input type="text" id="font-family" class="setting-input">
+                                        <select id="font-family" class="setting-select">
+                                            <option value="Consolas, 'Courier New', monospace">Consolas (Windows)</option>
+                                            <option value="'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace">SF Mono (macOS)</option>
+                                            <option value="'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace">Cascadia Code</option>
+                                            <option value="'Fira Code', 'JetBrains Mono', Consolas, monospace">Fira Code</option>
+                                            <option value="'JetBrains Mono', 'Fira Code', Consolas, monospace">JetBrains Mono</option>
+                                            <option value="'Source Code Pro', 'Fira Code', Consolas, monospace">Source Code Pro</option>
+                                            <option value="'Roboto Mono', 'Fira Code', Consolas, monospace">Roboto Mono</option>
+                                            <option value="'Ubuntu Mono', 'Fira Code', Consolas, monospace">Ubuntu Mono</option>
+                                            <option value="'DejaVu Sans Mono', 'Fira Code', Consolas, monospace">DejaVu Sans Mono</option>
+                                            <option value="'Liberation Mono', 'Fira Code', Consolas, monospace">Liberation Mono</option>
+                                            <option value="'Courier New', monospace">Courier New</option>
+                                            <option value="'Lucida Console', 'Courier New', monospace">Lucida Console</option>
+                                            <option value="'Monaco', 'Consolas', monospace">Monaco</option>
+                                            <option value="'Menlo', 'Monaco', 'Consolas', monospace">Menlo</option>
+                                        </select>
                                     </div>
                                     <div class="setting-item">
                                         <label for="tab-size">Tab Size:</label>
@@ -393,8 +427,10 @@ export class SettingsDialog {
             
             // Editor settings
             await this.configManager.set('editor.defaultLanguage', document.getElementById('default-language').value);
-            await this.configManager.set('editor.fontSize', parseInt(document.getElementById('font-size').value));
-            await this.configManager.set('editor.fontFamily', document.getElementById('font-family').value);
+            const fontSize = parseInt(document.getElementById('font-size').value);
+            const fontFamily = document.getElementById('font-family').value;
+            await this.configManager.set('editor.fontSize', fontSize);
+            await this.configManager.set('editor.fontFamily', fontFamily);
             await this.configManager.set('editor.tabSize', parseInt(document.getElementById('tab-size').value));
             await this.configManager.set('editor.insertSpaces', document.getElementById('insert-spaces').checked);
             await this.configManager.set('editor.wordWrap', document.getElementById('word-wrap').checked ? 'on' : 'off');
@@ -432,6 +468,18 @@ export class SettingsDialog {
             
             // Save to file
             await this.configManager.save();
+            
+            // Apply font settings immediately to editor
+            try {
+                const { EditorManager } = await import('../editor/editor-manager.js');
+                // Get the global editor manager instance
+                const editorManager = window.app?.editorManager;
+                if (editorManager) {
+                    editorManager.applyFontSettings(fontSize, fontFamily);
+                }
+            } catch (error) {
+                console.warn('Could not apply font settings immediately:', error);
+            }
             
             this.close();
             console.log('Settings saved successfully');

@@ -767,6 +767,49 @@ export class EditorManager {
         this.editor.setPosition({ lineNumber, column: 1 });
     }
 
+    // Apply font settings
+    applyFontSettings(fontSize, fontFamily) {
+        if (!this.editor) return;
+        
+        console.log('Applying font settings:', { fontSize, fontFamily });
+        
+        // Update Monaco editor font settings
+        this.editor.updateOptions({
+            fontSize: fontSize,
+            fontFamily: fontFamily
+        });
+        
+        console.log('Font settings applied successfully');
+    }
+
+    // Apply all editor settings from config
+    async applyEditorSettings() {
+        try {
+            const { getConfigManager } = await import('../utils/config-manager.js');
+            const configManager = getConfigManager();
+            const config = await configManager.get();
+            
+            if (config.editor) {
+                this.applyFontSettings(
+                    config.editor.fontSize || 14,
+                    config.editor.fontFamily || "Consolas, 'Courier New', monospace"
+                );
+                
+                // Apply other editor settings
+                if (this.editor) {
+                    this.editor.updateOptions({
+                        tabSize: config.editor.tabSize || 4,
+                        insertSpaces: config.editor.insertSpaces !== false,
+                        wordWrap: config.editor.wordWrap || 'on',
+                        minimap: { enabled: config.editor.minimap !== false }
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Failed to apply editor settings:', error);
+        }
+    }
+
     // Dispose
     dispose() {
         if (this.editor) {

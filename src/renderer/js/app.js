@@ -81,6 +81,11 @@ class CodeCADApp {
         await this.editorManager.initialize();
         console.log('Editor manager initialization complete');
         
+        // Apply editor settings from config
+        console.log('Applying editor settings...');
+        await this.editorManager.applyEditorSettings();
+        console.log('Editor settings applied');
+        
         // Initialize 3D Viewer
         console.log('Initializing 3D viewer...');
         await this.viewer3D.initialize();
