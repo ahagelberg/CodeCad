@@ -1,4 +1,6 @@
 // Base class for all script engines
+import { DEFAULT_GEOMETRY_COLORS } from '../../constants/geometry-colors.js';
+
 export class BaseEngine {
     constructor() {
         this.name = 'Base Engine';
@@ -62,7 +64,7 @@ export class BaseEngine {
             size: Array.isArray(size) ? size : [size, size, size],
             position: [0, 0, 0],
             rotation: [0, 0, 0],
-            color: 0x007acc,
+            color: DEFAULT_GEOMETRY_COLORS.CUBE,
             transparent: false,
             opacity: 1.0
         };
@@ -75,7 +77,7 @@ export class BaseEngine {
             segments: segments,
             position: [0, 0, 0],
             rotation: [0, 0, 0],
-            color: 0x007acc,
+            color: DEFAULT_GEOMETRY_COLORS.CUBE,
             transparent: false,
             opacity: 1.0
         };
@@ -89,7 +91,7 @@ export class BaseEngine {
             segments: segments,
             position: [0, 0, 0],
             rotation: [0, 0, 0],
-            color: 0x007acc,
+            color: DEFAULT_GEOMETRY_COLORS.CUBE,
             transparent: false,
             opacity: 1.0
         };
@@ -103,7 +105,7 @@ export class BaseEngine {
             height: height,
             position: [0, 0],
             rotation: 0,
-            color: 0x00aa00,
+            color: DEFAULT_GEOMETRY_COLORS.RECTANGLE,
             transparent: false,
             opacity: 1.0
         };
@@ -116,7 +118,7 @@ export class BaseEngine {
             segments: segments,
             position: [0, 0],
             rotation: 0,
-            color: 0x00aa00,
+            color: DEFAULT_GEOMETRY_COLORS.RECTANGLE,
             transparent: false,
             opacity: 1.0
         };
@@ -128,7 +130,7 @@ export class BaseEngine {
             points: points,
             position: [0, 0],
             rotation: 0,
-            color: 0x00aa00,
+            color: DEFAULT_GEOMETRY_COLORS.RECTANGLE,
             transparent: false,
             opacity: 1.0
         };
@@ -143,7 +145,7 @@ export class BaseEngine {
             segments: segments,
             position: [0, 0],
             rotation: 0,
-            color: 0x00aa00,
+            color: DEFAULT_GEOMETRY_COLORS.RECTANGLE,
             transparent: false,
             opacity: 1.0
         };
@@ -156,7 +158,7 @@ export class BaseEngine {
             endPoint: endPoint,
             position: [0, 0],
             rotation: 0,
-            color: 0x00aa00,
+            color: DEFAULT_GEOMETRY_COLORS.RECTANGLE,
             transparent: false,
             opacity: 1.0
         };
@@ -171,7 +173,7 @@ export class BaseEngine {
             twist: twist,
             slices: slices,
             center: center,
-            color: 0x007acc,
+            color: DEFAULT_GEOMETRY_COLORS.CUBE,
             transparent: false,
             opacity: 1.0
         };
@@ -183,7 +185,7 @@ export class BaseEngine {
             shape: shape,
             angle: angle,
             segments: segments,
-            color: 0x007acc,
+            color: DEFAULT_GEOMETRY_COLORS.CUBE,
             transparent: false,
             opacity: 1.0
         };
@@ -197,7 +199,7 @@ export class BaseEngine {
             distance: distance,
             joinType: joinType, // 'round', 'square', 'miter'
             miterLimit: miterLimit,
-            color: 0x00aa00,
+            color: DEFAULT_GEOMETRY_COLORS.RECTANGLE,
             transparent: false,
             opacity: 1.0
         };
@@ -208,7 +210,7 @@ export class BaseEngine {
             type: '2d_fillet',
             shape: shape,
             radius: radius,
-            color: 0x00aa00,
+            color: DEFAULT_GEOMETRY_COLORS.RECTANGLE,
             transparent: false,
             opacity: 1.0
         };
@@ -219,7 +221,7 @@ export class BaseEngine {
             type: '2d_chamfer',
             shape: shape,
             distance: distance,
-            color: 0x00aa00,
+            color: DEFAULT_GEOMETRY_COLORS.RECTANGLE,
             transparent: false,
             opacity: 1.0
         };
@@ -279,7 +281,7 @@ export class BaseEngine {
         return {
             type: 'union',
             objects: objects,
-            color: 0x007acc,
+            color: DEFAULT_GEOMETRY_COLORS.CUBE,
             transparent: false,
             opacity: 1.0
         };
@@ -289,7 +291,7 @@ export class BaseEngine {
         return {
             type: 'difference',
             objects: objects,
-            color: 0x007acc,
+            color: DEFAULT_GEOMETRY_COLORS.CUBE,
             transparent: false,
             opacity: 1.0
         };
@@ -299,7 +301,7 @@ export class BaseEngine {
         return {
             type: 'intersection',
             objects: objects,
-            color: 0x007acc,
+            color: DEFAULT_GEOMETRY_COLORS.CUBE,
             transparent: false,
             opacity: 1.0
         };

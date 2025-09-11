@@ -1,5 +1,6 @@
 // Three.js 3D Viewer
 import * as THREE from 'three';
+import { DEFAULT_GEOMETRY_COLORS, LIGHT_COLORS, HELPER_COLORS } from '../constants/geometry-colors.js';
 
 export class Viewer3D {
     constructor() {
@@ -106,12 +107,12 @@ export class Viewer3D {
 
     setupLighting() {
         // Ambient light - increased intensity
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+        const ambientLight = new THREE.AmbientLight(LIGHT_COLORS.AMBIENT, 0.8);
         ambientLight.userData.isLight = true;
         this.scene.add(ambientLight);
 
         // Directional light - increased intensity
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        const directionalLight = new THREE.DirectionalLight(LIGHT_COLORS.DIRECTIONAL, 1.2);
         directionalLight.position.set(10, 10, 5);
         directionalLight.castShadow = true;
         directionalLight.shadow.mapSize.width = 2048;
@@ -126,7 +127,7 @@ export class Viewer3D {
         this.scene.add(directionalLight);
 
         // Point light - increased intensity
-        const pointLight = new THREE.PointLight(0xffffff, 0.8, 100);
+        const pointLight = new THREE.PointLight(LIGHT_COLORS.POINT, 0.8, 100);
         pointLight.position.set(-10, 10, 10);
         pointLight.userData.isLight = true;
         this.scene.add(pointLight);
@@ -337,7 +338,7 @@ export class Viewer3D {
                         geometryData.size[2]
                     );
                     const cubeMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x007acc,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.CUBE,
                         shininess: 30
                     });
                     mesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
@@ -350,7 +351,7 @@ export class Viewer3D {
                         geometryData.segments || 32
                     );
                     const sphereMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x007acc,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.CUBE,
                         shininess: 30
                     });
                     mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
@@ -364,7 +365,7 @@ export class Viewer3D {
                         geometryData.segments || 32
                     );
                     const cylinderMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x007acc,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.CUBE,
                         shininess: 30
                     });
                     mesh = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
@@ -377,7 +378,7 @@ export class Viewer3D {
                         geometryData.height
                     );
                     const rectMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x00aa00,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.RECTANGLE,
                         shininess: 30,
                         side: THREE.DoubleSide
                     });
@@ -390,7 +391,7 @@ export class Viewer3D {
                         geometryData.segments || 32
                     );
                     const circleMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x00aa00,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.RECTANGLE,
                         shininess: 30,
                         side: THREE.DoubleSide
                     });
@@ -400,7 +401,7 @@ export class Viewer3D {
                 case '2d_polygon':
                     const polygonGeometry = this.createPolygonGeometry(geometryData.points);
                     const polygonMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x00aa00,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.RECTANGLE,
                         shininess: 30,
                         side: THREE.DoubleSide
                     });
@@ -415,7 +416,7 @@ export class Viewer3D {
                         geometryData.segments || 32
                     );
                     const arcMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x00aa00,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.RECTANGLE,
                         shininess: 30,
                         side: THREE.DoubleSide
                     });
@@ -428,7 +429,7 @@ export class Viewer3D {
                         geometryData.endPoint
                     );
                     const lineMaterial = new THREE.LineBasicMaterial({ 
-                        color: geometryData.color || 0x00aa00,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.RECTANGLE,
                         linewidth: 2
                     });
                     mesh = new THREE.Line(lineGeometry, lineMaterial);
@@ -438,7 +439,7 @@ export class Viewer3D {
                 case 'extruded':
                     const extrudedGeometry = this.createExtrudedGeometry(geometryData);
                     const extrudedMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x007acc,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.CUBE,
                         shininess: 30
                     });
                     mesh = new THREE.Mesh(extrudedGeometry, extrudedMaterial);
@@ -447,7 +448,7 @@ export class Viewer3D {
                 case 'rotated_extruded':
                     const rotatedExtrudedGeometry = this.createRotatedExtrudedGeometry(geometryData);
                     const rotatedExtrudedMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x007acc,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.CUBE,
                         shininess: 30
                     });
                     mesh = new THREE.Mesh(rotatedExtrudedGeometry, rotatedExtrudedMaterial);
@@ -457,7 +458,7 @@ export class Viewer3D {
                 case '2d_offset':
                     const offsetGeometry = this.createOffsetGeometry(geometryData);
                     const offsetMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x00aa00,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.RECTANGLE,
                         shininess: 30,
                         side: THREE.DoubleSide
                     });
@@ -467,7 +468,7 @@ export class Viewer3D {
                 case '2d_fillet':
                     const filletGeometry = this.createFilletGeometry(geometryData);
                     const filletMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x00aa00,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.RECTANGLE,
                         shininess: 30,
                         side: THREE.DoubleSide
                     });
@@ -477,7 +478,7 @@ export class Viewer3D {
                 case '2d_chamfer':
                     const chamferGeometry = this.createChamferGeometry(geometryData);
                     const chamferMaterial = new THREE.MeshPhongMaterial({ 
-                        color: geometryData.color || 0x00aa00,
+                        color: geometryData.color || DEFAULT_GEOMETRY_COLORS.RECTANGLE,
                         shininess: 30,
                         side: THREE.DoubleSide
                     });
@@ -529,7 +530,7 @@ export class Viewer3D {
         // Add a simple cube for testing
         const geometry = new THREE.BoxGeometry(2, 2, 2);
         const material = new THREE.MeshPhongMaterial({ 
-            color: 0x007acc,
+            color: DEFAULT_GEOMETRY_COLORS.CUBE,
             shininess: 30,
             transparent: false,
             opacity: 1.0
@@ -541,7 +542,7 @@ export class Viewer3D {
         this.objects.push(cube);
 
         // Add grid
-        const gridHelper = new THREE.GridHelper(20, 20, 0x888888, 0xcccccc);
+        const gridHelper = new THREE.GridHelper(20, 20, HELPER_COLORS.GRID_CENTER, HELPER_COLORS.GRID_LINES);
         gridHelper.userData.isHelper = true;
         this.scene.add(gridHelper);
 
@@ -670,13 +671,13 @@ export class Viewer3D {
             // Create appropriate material based on object type
             if (objData.type === '2d_line') {
                 material = new THREE.LineBasicMaterial({ 
-                    color: objData.color || 0x00aa00,
+                    color: objData.color || DEFAULT_GEOMETRY_COLORS.RECTANGLE,
                     linewidth: 2
                 });
             } else if (objData.type.startsWith('2d_')) {
                 // 2D shapes use double-sided materials
                 material = new THREE.MeshPhongMaterial({
-                    color: objData.color || 0x00aa00,
+                    color: objData.color || DEFAULT_GEOMETRY_COLORS.RECTANGLE,
                     shininess: 30,
                     transparent: objData.transparent || false,
                     opacity: objData.opacity || 1.0,
@@ -685,7 +686,7 @@ export class Viewer3D {
             } else {
                 // 3D shapes use standard materials
                 material = new THREE.MeshPhongMaterial({
-                    color: objData.color || 0x007acc,
+                    color: objData.color || DEFAULT_GEOMETRY_COLORS.CUBE,
                     shininess: 30,
                     transparent: objData.transparent || false,
                     opacity: objData.opacity || 1.0
