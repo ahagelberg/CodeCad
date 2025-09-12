@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onMenuOpenFile: (callback) => ipcRenderer.on('menu-open-file', callback),
   onMenuSaveFile: (callback) => ipcRenderer.on('menu-save-file', callback),
   onMenuSaveAsFile: (callback) => ipcRenderer.on('menu-save-as-file', callback),
+  onMenuSaveAs: (callback) => ipcRenderer.on('menu-save-as', callback),
   onMenuExportSTL: (callback) => ipcRenderer.on('menu-export-stl', callback),
   onMenuExportSTEP: (callback) => ipcRenderer.on('menu-export-step', callback),
   onMenuSwitchLanguage: (callback) => ipcRenderer.on('menu-switch-language', callback),

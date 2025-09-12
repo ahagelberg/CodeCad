@@ -407,6 +407,7 @@ class CodeCADApp {
             window.electronAPI.onMenuOpenFile((event, data) => this.openFileFromMenu(data));
             window.electronAPI.onMenuSaveFile(() => this.saveFile());
             window.electronAPI.onMenuSaveAsFile((event, filePath) => this.saveAsFile(filePath));
+            window.electronAPI.onMenuSaveAs(() => this.saveFile()); // Handle menu Save As
             
             // Export operations
             window.electronAPI.onMenuExportSTL(() => this.exportSTL());
@@ -479,7 +480,8 @@ class CodeCADApp {
             if (window.electronAPI) {
                 // Use Electron API to show open dialog
                 const result = await window.electronAPI.showOpenDialog({
-                    lastUsedDirectory: this.getWorkingDirectory()
+                    lastUsedDirectory: this.getWorkingDirectory(),
+                    currentLanguage: this.currentLanguage
                 });
                 if (result.success && result.filePath) {
                     this.currentFile = result.filePath;
@@ -565,7 +567,8 @@ class CodeCADApp {
                 // Show save dialog
                 if (window.electronAPI) {
                     const result = await window.electronAPI.showSaveDialog({
-                        lastUsedDirectory: this.getWorkingDirectory()
+                        lastUsedDirectory: this.getWorkingDirectory(),
+                        currentLanguage: this.currentLanguage
                     });
                     if (result.success) {
                         await this.saveAsFile(result.filePath);
@@ -801,6 +804,7 @@ class CodeCADApp {
         const extension = filename.split('.').pop().toLowerCase();
         const languageMap = {
             'js': 'javascript',
+            'codecad': 'javascript',
             'scad': 'openscad',
             'cad': 'javascript'
         };

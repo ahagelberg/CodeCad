@@ -110,7 +110,8 @@ function createMenu() {
               properties: ['openFile'],
               defaultPath: defaultPath,
               filters: [
-                { name: 'CAD Scripts', extensions: ['codecad', 'scad'] },
+                { name: 'CodeCAD Scripts', extensions: ['codecad'] },
+                { name: 'OpenSCAD Scripts', extensions: ['scad'] },
                 { name: 'All Files', extensions: ['*'] }
               ]
             });
@@ -134,29 +135,9 @@ function createMenu() {
         {
           label: 'Save As',
           accelerator: 'CmdOrCtrl+Shift+S',
-          click: async () => {
-            // Get last used directory from renderer
-            let defaultPath = path.join(require('os').homedir(), 'Documents');
-            try {
-              const lastDirResult = await mainWindow.webContents.executeJavaScript('localStorage.getItem("code-cad-last-directory")');
-              if (lastDirResult && fs.existsSync(lastDirResult)) {
-                defaultPath = lastDirResult;
-              }
-            } catch (error) {
-              // Ignore error, use default
-            }
-            
-            const result = await dialog.showSaveDialog(mainWindow, {
-              defaultPath: defaultPath,
-              filters: [
-                { name: 'CAD Scripts', extensions: ['codecad', 'scad'] },
-                { name: 'All Files', extensions: ['*'] }
-              ]
-            });
-            
-            if (!result.canceled) {
-              mainWindow.webContents.send('menu-save-as-file', result.filePath);
-            }
+          click: () => {
+            // Send message to renderer to handle save dialog
+            mainWindow.webContents.send('menu-save-as');
           }
         },
         { type: 'separator' },
@@ -304,12 +285,23 @@ ipcMain.handle('read-file', async (event, filePath) => {
 
 ipcMain.handle('show-open-dialog', async (event, options = {}) => {
   try {
+    // Set filters based on current language
+    let filters;
+    if (options.currentLanguage === 'openscad') {
+      filters = [
+        { name: 'OpenSCAD Scripts', extensions: ['scad'] },
+        { name: 'All Files', extensions: ['*'] }
+      ];
+    } else {
+      filters = [
+        { name: 'CodeCAD Scripts', extensions: ['codecad'] },
+        { name: 'All Files', extensions: ['*'] }
+      ];
+    }
+    
     const defaultOptions = {
       properties: ['openFile'],
-      filters: [
-        { name: 'CAD Scripts', extensions: ['codecad'] },
-        { name: 'All Files', extensions: ['*'] }
-      ]
+      filters: filters
     };
     
     // Get last used directory from localStorage if available
@@ -360,13 +352,33 @@ ipcMain.handle('show-open-dialog', async (event, options = {}) => {
   }
 });
 
+ipcMain.handle('get-current-language', async (event) => {
+  try {
+    const language = await mainWindow.webContents.executeJavaScript('window.app ? window.app.currentLanguage : "javascript"');
+    return { success: true, language: language };
+  } catch (error) {
+    return { success: false, error: error.message, language: 'javascript' };
+  }
+});
+
 ipcMain.handle('show-save-dialog', async (event, options = {}) => {
   try {
-    const defaultOptions = {
-      filters: [
-        { name: 'CAD Scripts', extensions: ['codecad'] },
+    // Set filters based on current language
+    let filters;
+    if (options.currentLanguage === 'openscad') {
+      filters = [
+        { name: 'OpenSCAD Scripts', extensions: ['scad'] },
         { name: 'All Files', extensions: ['*'] }
-      ]
+      ];
+    } else {
+      filters = [
+        { name: 'CodeCAD Scripts', extensions: ['codecad'] },
+        { name: 'All Files', extensions: ['*'] }
+      ];
+    }
+    
+    const defaultOptions = {
+      filters: filters
     };
     
     // Get last used directory from localStorage if available
@@ -385,10 +397,29 @@ ipcMain.handle('show-save-dialog', async (event, options = {}) => {
       defaultPath = path.join(require('os').homedir(), 'Documents');
     }
     
+    // Set default filename based on current language
+    let defaultFilename = 'untitled';
+    if (options.currentLanguage) {
+      switch (options.currentLanguage) {
+        case 'javascript':
+          defaultFilename = 'untitled.codecad';
+          break;
+        case 'openscad':
+          defaultFilename = 'untitled.scad';
+          break;
+        default:
+          defaultFilename = 'untitled.codecad';
+      }
+    } else {
+      defaultFilename = 'untitled.codecad';
+    }
+    
+    const fullDefaultPath = path.join(defaultPath, defaultFilename);
+    
     const dialogOptions = { 
       ...defaultOptions, 
       ...options,
-      defaultPath: defaultPath
+      defaultPath: fullDefaultPath
     };
     
     const result = await dialog.showSaveDialog(mainWindow, dialogOptions);
@@ -508,4 +539,41 @@ ipcMain.handle('get-all-config', async (event) => {
   } catch (error) {
     return { success: false, error: error.message };
   }
+});
+
+// Menu event handlers
+ipcMain.on('menu-new-file', (event) => {
+  mainWindow.webContents.send('menu-new-file');
+});
+
+ipcMain.on('menu-open-file', (event, data) => {
+  mainWindow.webContents.send('menu-open-file', data);
+});
+
+ipcMain.on('menu-save-file', (event) => {
+  mainWindow.webContents.send('menu-save-file');
+});
+
+ipcMain.on('menu-save-as-file', (event, filePath) => {
+  mainWindow.webContents.send('menu-save-as-file', filePath);
+});
+
+ipcMain.on('menu-save-as', (event) => {
+  mainWindow.webContents.send('menu-save-as');
+});
+
+ipcMain.on('menu-export-stl', (event) => {
+  mainWindow.webContents.send('menu-export-stl');
+});
+
+ipcMain.on('menu-export-step', (event) => {
+  mainWindow.webContents.send('menu-export-step');
+});
+
+ipcMain.on('menu-switch-language', (event, language) => {
+  mainWindow.webContents.send('menu-switch-language', language);
+});
+
+ipcMain.on('menu-open-settings', (event) => {
+  mainWindow.webContents.send('menu-open-settings');
 });
