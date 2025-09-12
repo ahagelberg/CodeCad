@@ -19,6 +19,49 @@ const APP_VERSION = VERSION_INFO.version;
 let mainWindow;
 let configManager;
 
+// Window state management
+function loadWindowState() {
+  try {
+    const userDataPath = app.getPath('userData');
+    const stateFile = path.join(userDataPath, 'window-state.json');
+    
+    if (fs.existsSync(stateFile)) {
+      const data = fs.readFileSync(stateFile, 'utf8');
+      const state = JSON.parse(data);
+      
+      // Validate the state
+      if (state.width && state.height && state.x !== undefined && state.y !== undefined) {
+        return state;
+      }
+    }
+  } catch (error) {
+    console.log('Failed to load window state:', error.message);
+  }
+  
+  return null;
+}
+
+function saveWindowState() {
+  try {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    
+    const bounds = mainWindow.getBounds();
+    const state = {
+      width: bounds.width,
+      height: bounds.height,
+      x: bounds.x,
+      y: bounds.y
+    };
+    
+    const userDataPath = app.getPath('userData');
+    const stateFile = path.join(userDataPath, 'window-state.json');
+    
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+  } catch (error) {
+    console.log('Failed to save window state:', error.message);
+  }
+}
+
 function createWindow() {
   // Initialize configuration
   configManager = getConfigManager();
@@ -26,18 +69,27 @@ function createWindow() {
   // Get window configuration
   const windowConfig = configManager.getWindowConfig();
   const securityConfig = configManager.getSecurityConfig();
+  const uiConfig = configManager.getUIConfig();
+  
+  // Load saved window state if enabled
+  let windowState = null;
+  if (uiConfig.rememberWindowState) {
+    windowState = loadWindowState();
+  }
   
   // Create the browser window
   const windowTitle = `${APP_NAME} v${APP_VERSION}`;
-  console.log('Setting window title to:', windowTitle);
   
-  mainWindow = new BrowserWindow({
-    width: windowConfig.width,
-    height: windowConfig.height,
+  // Use saved state or default values
+  const windowOptions = {
+    width: windowState?.width || windowConfig.width,
+    height: windowState?.height || windowConfig.height,
+    x: windowState?.x,
+    y: windowState?.y,
     minWidth: windowConfig.minWidth,
     minHeight: windowConfig.minHeight,
     title: windowTitle,
-    center: windowConfig.center,
+    center: windowState ? false : windowConfig.center, // Don't center if we have saved position
     resizable: windowConfig.resizable,
     maximizable: windowConfig.maximizable,
     minimizable: windowConfig.minimizable,
@@ -52,7 +104,9 @@ function createWindow() {
     icon: path.join(__dirname, '../../resources/icons/icon.png'),
     titleBarStyle: 'default',
     show: windowConfig.showOnReady ? false : true // Don't show until ready
-  });
+  };
+  
+  mainWindow = new BrowserWindow(windowOptions);
 
   // Load the app
   const devConfig = configManager.getDevelopmentConfig();
@@ -69,6 +123,19 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
   });
+
+  // Save window state when moved or resized
+  if (uiConfig.rememberWindowState) {
+    let saveTimeout;
+    const debouncedSave = () => {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(saveWindowState, 500); // Debounce saves
+    };
+    
+    mainWindow.on('move', debouncedSave);
+    mainWindow.on('resize', debouncedSave);
+    mainWindow.on('close', saveWindowState); // Save immediately on close
+  }
 
   // Handle window closed
   mainWindow.on('closed', () => {
