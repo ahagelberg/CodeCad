@@ -1,4 +1,6 @@
 // File Manager - Handles file operations
+const { VERSION_INFO } = require('../../../shared/version.js');
+
 export class FileManager {
     constructor() {
         this.currentFile = null;
@@ -42,20 +44,38 @@ export class FileManager {
     }
 
     async readFile(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = (e) => reject(new Error('Failed to read file'));
-            reader.readAsText(file);
-        });
+        // Handle both File objects and string content
+        if (typeof file === 'string') {
+            // Content is already a string (from Electron menu)
+            const contentWithoutHeader = this.stripScriptHeader(file);
+            return contentWithoutHeader;
+        } else if (file instanceof File || file instanceof Blob) {
+            // File object from file input
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    // Strip script header when loading
+                    const contentWithoutHeader = this.stripScriptHeader(content);
+                    resolve(contentWithoutHeader);
+                };
+                reader.onerror = (e) => reject(new Error('Failed to read file'));
+                reader.readAsText(file);
+            });
+        } else {
+            throw new Error('Invalid file parameter - expected File object or string content');
+        }
     }
 
     async saveFile(filePath, content) {
+        // Add script header to content before saving
+        const contentWithHeader = this.addScriptHeader(content);
+        
         if (window.electronAPI) {
             // Use Electron API for file operations
-            const result = await window.electronAPI.saveFile(filePath, content);
+            const result = await window.electronAPI.saveFile(filePath, contentWithHeader);
             if (result.success) {
-                this.currentFile = filePath;
+                this.setCurrentFile(filePath);
                 this.isDirty = false;
                 return result;
             } else {
@@ -63,7 +83,7 @@ export class FileManager {
             }
         } else {
             // Fallback for web environment
-            this.downloadFile(content, filePath);
+            this.downloadFile(contentWithHeader, filePath);
             return { success: true };
         }
     }
@@ -255,5 +275,52 @@ export class FileManager {
         }
         
         return normal;
+    }
+
+    // Script header utilities
+    createScriptHeader() {
+        const header = {
+            program: VERSION_INFO.name,
+            version: VERSION_INFO.version,
+            created: new Date().toISOString(),
+            format: 'codecad'
+        };
+        
+        return `/* ${JSON.stringify(header, null, 2)} */\n\n`;
+    }
+
+    addScriptHeader(content) {
+        // Check if content already has a header
+        if (this.hasScriptHeader(content)) {
+            return content; // Don't add duplicate headers
+        }
+        
+        return this.createScriptHeader() + content;
+    }
+
+    hasScriptHeader(content) {
+        // Check if content starts with a script header comment
+        const headerPattern = /^\/\*\s*\{[\s\S]*?\}\s*\*\/\s*\n/;
+        return headerPattern.test(content);
+    }
+
+    stripScriptHeader(content) {
+        // Remove the script header if it exists
+        const headerPattern = /^\/\*\s*\{[\s\S]*?\}\s*\*\/\s*\n/;
+        return content.replace(headerPattern, '');
+    }
+
+    getScriptHeaderInfo(content) {
+        // Extract header information if it exists
+        const headerMatch = content.match(/^\/\*\s*(\{[\s\S]*?\})\s*\*\/\s*\n/);
+        if (headerMatch) {
+            try {
+                return JSON.parse(headerMatch[1]);
+            } catch (error) {
+                console.warn('Failed to parse script header:', error);
+                return null;
+            }
+        }
+        return null;
     }
 }

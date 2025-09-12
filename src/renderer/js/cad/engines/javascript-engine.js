@@ -6,7 +6,7 @@ export class JavaScriptEngine extends BaseEngine {
         super();
         this.name = 'JavaScript Engine';
         this.version = '1.0.0';
-        this.supportedExtensions = ['js'];
+        this.supportedExtensions = ['codecad'];
         this.generatedGeometry = [];
         this.initializeCommands();
     }
@@ -16,7 +16,6 @@ export class JavaScriptEngine extends BaseEngine {
         this.addAlias('move', 'translate');
         this.addAlias('square', 'rectangle');
         this.addAlias('box', 'cube');
-        this.addAlias('export_model', 'export_file');
     }
 
     initializeCommands() {
@@ -279,7 +278,8 @@ export class JavaScriptEngine extends BaseEngine {
             intersection: (objects) => this.intersection(objects),
             
             // Export command
-            export_file: (filename, format = 'stl', overwrite = false) => this.exportGeometry(filename, format, overwrite),
+            export_file: (filename, format = 'stl', overwrite = false) => this.exportModel(filename, format, overwrite),
+            export_model: (filename, format = 'stl', overwrite = false) => this.exportModel(filename, format, overwrite),
             
             // Math functions
             Math: Math,
@@ -554,6 +554,36 @@ export class JavaScriptEngine extends BaseEngine {
 
         } catch (error) {
             console.log(`[CAD Script] Export failed: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async exportModel(filename, format = 'stl', overwrite = false) {
+        try {
+            // Get the app instance to access the working directory
+            const app = window.app;
+            if (!app) {
+                throw new Error('Cannot access application instance');
+            }
+
+            console.log(`[CAD Script] exportModel called with filename: ${filename}`);
+            console.log(`[CAD Script] app.currentWorkingDirectory: ${app.getWorkingDirectory()}`);
+
+            // Use the app's working directory as the base path
+            const workingDir = app.getWorkingDirectory();
+            if (!workingDir) {
+                throw new Error('No working directory set. Please open or save a file first.');
+            }
+
+            // Create the full export path
+            const exportPath = `${workingDir}/${filename}`;
+            console.log(`[CAD Script] Export path: ${exportPath}`);
+
+            // Call the existing exportGeometry method with the determined path
+            return await this.exportGeometry(exportPath, format, overwrite);
+
+        } catch (error) {
+            console.log(`[CAD Script] Export model failed: ${error.message}`);
             throw error;
         }
     }

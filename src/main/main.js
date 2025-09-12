@@ -2,10 +2,18 @@ const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { getConfigManager } = require('../shared/config-manager.js');
+const { VERSION_INFO } = require('../shared/version.js');
+
+// Script header utilities for main process
+function stripScriptHeader(content) {
+    // Remove the script header if it exists
+    const headerPattern = /^\/\*\s*\{[\s\S]*?\}\s*\*\/\s*\n/;
+    return content.replace(headerPattern, '');
+}
 
 // Application constants
-const APP_NAME = 'Code CAD';
-const APP_VERSION = '1.0.0';
+const APP_NAME = VERSION_INFO.name;
+const APP_VERSION = VERSION_INFO.version;
 
 // Keep a global reference of the window object
 let mainWindow;
@@ -20,12 +28,15 @@ function createWindow() {
   const securityConfig = configManager.getSecurityConfig();
   
   // Create the browser window
+  const windowTitle = `${APP_NAME} v${APP_VERSION}`;
+  console.log('Setting window title to:', windowTitle);
+  
   mainWindow = new BrowserWindow({
     width: windowConfig.width,
     height: windowConfig.height,
     minWidth: windowConfig.minWidth,
     minHeight: windowConfig.minHeight,
-    title: windowConfig.title,
+    title: windowTitle,
     center: windowConfig.center,
     resizable: windowConfig.resizable,
     maximizable: windowConfig.maximizable,
@@ -99,7 +110,7 @@ function createMenu() {
               properties: ['openFile'],
               defaultPath: defaultPath,
               filters: [
-                { name: 'CAD Scripts', extensions: ['js', 'scad', 'cad'] },
+                { name: 'CAD Scripts', extensions: ['codecad', 'scad'] },
                 { name: 'All Files', extensions: ['*'] }
               ]
             });
@@ -107,7 +118,9 @@ function createMenu() {
             if (!result.canceled && result.filePaths.length > 0) {
               const filePath = result.filePaths[0];
               const content = fs.readFileSync(filePath, 'utf8');
-              mainWindow.webContents.send('menu-open-file', { filePath, content });
+              // Strip script header when opening files
+              const contentWithoutHeader = stripScriptHeader(content);
+              mainWindow.webContents.send('menu-open-file', { filePath, content: contentWithoutHeader });
             }
           }
         },
@@ -136,7 +149,7 @@ function createMenu() {
             const result = await dialog.showSaveDialog(mainWindow, {
               defaultPath: defaultPath,
               filters: [
-                { name: 'CAD Scripts', extensions: ['js', 'scad', 'cad'] },
+                { name: 'CAD Scripts', extensions: ['codecad', 'scad'] },
                 { name: 'All Files', extensions: ['*'] }
               ]
             });
@@ -281,7 +294,9 @@ ipcMain.handle('save-file', async (event, { filePath, content }) => {
 ipcMain.handle('read-file', async (event, filePath) => {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
-    return { success: true, content };
+    // Strip script header when reading files
+    const contentWithoutHeader = stripScriptHeader(content);
+    return { success: true, content: contentWithoutHeader };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -292,7 +307,7 @@ ipcMain.handle('show-open-dialog', async (event, options = {}) => {
     const defaultOptions = {
       properties: ['openFile'],
       filters: [
-        { name: 'CAD Scripts', extensions: ['js', 'ts', 'scad', 'cad'] },
+        { name: 'CAD Scripts', extensions: ['codecad'] },
         { name: 'All Files', extensions: ['*'] }
       ]
     };
@@ -324,11 +339,19 @@ ipcMain.handle('show-open-dialog', async (event, options = {}) => {
     if (!result.canceled && result.filePaths.length > 0) {
       const filePath = result.filePaths[0];
       const selectedDir = path.dirname(filePath);
-      return { 
-        success: true, 
-        filePath: filePath,
-        directory: selectedDir
-      };
+      try {
+        const content = fs.readFileSync(filePath, 'utf8');
+        // Strip script header when reading files
+        const contentWithoutHeader = stripScriptHeader(content);
+        return { 
+          success: true, 
+          filePath: filePath,
+          content: contentWithoutHeader,
+          directory: selectedDir
+        };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
     } else {
       return { success: false, canceled: true };
     }
@@ -341,7 +364,7 @@ ipcMain.handle('show-save-dialog', async (event, options = {}) => {
   try {
     const defaultOptions = {
       filters: [
-        { name: 'CAD Scripts', extensions: ['js', 'ts', 'scad', 'cad'] },
+        { name: 'CAD Scripts', extensions: ['codecad'] },
         { name: 'All Files', extensions: ['*'] }
       ]
     };

@@ -23,6 +23,9 @@ class CodeCADApp {
         this.debounceTimer = null;
         this.debounceDelay = 500; // Default delay in milliseconds
         
+        // Single variable to track the current working directory
+        this.currentWorkingDirectory = null;
+        
         this.init();
     }
 
@@ -69,6 +72,9 @@ class CodeCADApp {
 
             // Load debounce delay from config
             await this.loadDebounceConfig();
+
+            // Load the saved working directory
+            await this.loadWorkingDirectory();
 
             console.log('Code CAD application initialized successfully');
         } catch (error) {
@@ -473,19 +479,14 @@ class CodeCADApp {
             if (window.electronAPI) {
                 // Use Electron API to show open dialog
                 const result = await window.electronAPI.showOpenDialog({
-                    lastUsedDirectory: this.fileManager.getLastUsedDirectory()
+                    lastUsedDirectory: this.getWorkingDirectory()
                 });
                 if (result.success && result.filePath) {
-                    const content = await this.fileManager.readFile(result.filePath);
                     this.currentFile = result.filePath;
                     this.fileManager.setCurrentFile(result.filePath);
-                    this.loadScript(content, result.filePath);
+                    this.setWorkingDirectory(result.filePath);
+                    this.loadScript(result.content, result.filePath);
                     this.updateFileInfo(result.filePath);
-                    
-                    // Update last used directory
-                    if (result.directory) {
-                        this.fileManager.setLastUsedDirectory(result.directory);
-                    }
                     
                     this.updateStatus('File opened');
                 }
@@ -493,7 +494,7 @@ class CodeCADApp {
                 // Fallback for web environment - use file input
                 const input = document.createElement('input');
                 input.type = 'file';
-                input.accept = '.js,.ts,.scad,.cad';
+                input.accept = '.codecad,.scad';
                 input.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (file) {
@@ -516,14 +517,9 @@ class CodeCADApp {
         try {
             this.currentFile = data.filePath;
             this.fileManager.setCurrentFile(data.filePath);
+            this.setWorkingDirectory(data.filePath);
             this.loadScript(data.content, data.filePath);
             this.updateFileInfo(data.filePath);
-            
-            // Update last used directory
-            const directory = data.filePath.substring(0, data.filePath.lastIndexOf('/') || data.filePath.lastIndexOf('\\'));
-            if (directory) {
-                this.fileManager.setLastUsedDirectory(directory);
-            }
             
             this.updateStatus('File opened');
         } catch (error) {
@@ -561,31 +557,22 @@ class CodeCADApp {
                 await this.fileManager.saveFile(filePath, content);
                 this.currentFile = filePath;
                 this.fileManager.setCurrentFile(filePath);
+                this.setWorkingDirectory(filePath);
                 this.updateFileInfo(filePath);
-                
-                // Update last used directory
-                const directory = filePath.substring(0, filePath.lastIndexOf('/') || filePath.lastIndexOf('\\'));
-                if (directory) {
-                    this.fileManager.setLastUsedDirectory(directory);
-                }
                 
                 this.updateStatus('File saved');
             } else {
                 // Show save dialog
                 if (window.electronAPI) {
                     const result = await window.electronAPI.showSaveDialog({
-                        lastUsedDirectory: this.fileManager.getLastUsedDirectory()
+                        lastUsedDirectory: this.getWorkingDirectory()
                     });
                     if (result.success) {
-                        // Update last used directory
-                        if (result.directory) {
-                            this.fileManager.setLastUsedDirectory(result.directory);
-                        }
                         await this.saveAsFile(result.filePath);
                     }
                 } else {
                     // Fallback for web environment
-                    this.fileManager.downloadFile(content, 'untitled.js');
+                    this.fileManager.downloadFile(content, 'untitled.codecad');
                 }
             }
         } catch (error) {
@@ -605,7 +592,7 @@ class CodeCADApp {
             // Show save dialog
             if (window.electronAPI) {
                 const result = await window.electronAPI.showSaveDialog({
-                    lastUsedDirectory: this.fileManager.getLastUsedDirectory(),
+                    lastUsedDirectory: this.getWorkingDirectory(),
                     filters: [
                         { name: 'STL Files', extensions: ['stl'] },
                         { name: 'All Files', extensions: ['*'] }
@@ -630,10 +617,6 @@ class CodeCADApp {
                     });
                     
                     if (exportResult.success) {
-                        // Update last used directory
-                        if (result.directory) {
-                            this.fileManager.setLastUsedDirectory(result.directory);
-                        }
                         this.updateStatus(`STL exported to: ${result.filePath}`);
                     } else {
                         throw new Error(exportResult.error);
@@ -670,7 +653,7 @@ class CodeCADApp {
             // Show save dialog
             if (window.electronAPI) {
                 const result = await window.electronAPI.showSaveDialog({
-                    lastUsedDirectory: this.fileManager.getLastUsedDirectory(),
+                    lastUsedDirectory: this.getWorkingDirectory(),
                     filters: [
                         { name: 'STEP Files', extensions: ['stp', 'step'] },
                         { name: 'All Files', extensions: ['*'] }
@@ -693,10 +676,6 @@ class CodeCADApp {
                     });
                     
                     if (exportResult.success) {
-                        // Update last used directory
-                        if (result.directory) {
-                            this.fileManager.setLastUsedDirectory(result.directory);
-                        }
                         this.updateStatus(`STEP exported to: ${result.filePath}`);
                     } else {
                         throw new Error(exportResult.error);
@@ -762,6 +741,56 @@ class CodeCADApp {
             console.log('Failed to load debounce config, using default:', error);
             this.debounceDelay = 500;
         }
+    }
+
+    // Working directory management methods
+    async loadWorkingDirectory() {
+        try {
+            // Try to load from localStorage first
+            const savedDir = localStorage.getItem('code-cad-working-directory');
+            if (savedDir) {
+                this.currentWorkingDirectory = savedDir;
+                console.log('Loaded working directory from localStorage:', this.currentWorkingDirectory);
+                return;
+            }
+
+            // Fallback to Documents folder
+            if (window.electronAPI) {
+                const result = await window.electronAPI.getUserDocumentsPath();
+                if (result.success) {
+                    this.currentWorkingDirectory = result.path;
+                    this.saveWorkingDirectory();
+                    console.log('Set working directory to Documents folder:', this.currentWorkingDirectory);
+                }
+            }
+        } catch (error) {
+            console.log('Failed to load working directory:', error);
+        }
+    }
+
+    saveWorkingDirectory() {
+        if (this.currentWorkingDirectory) {
+            localStorage.setItem('code-cad-working-directory', this.currentWorkingDirectory);
+            console.log('Saved working directory:', this.currentWorkingDirectory);
+        }
+    }
+
+    setWorkingDirectory(filePath) {
+        if (filePath) {
+            // Extract directory from file path
+            const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+            const directory = lastSlash > 0 ? filePath.substring(0, lastSlash) : null;
+            
+            if (directory) {
+                this.currentWorkingDirectory = directory;
+                this.saveWorkingDirectory();
+                console.log('Set working directory to:', this.currentWorkingDirectory);
+            }
+        }
+    }
+
+    getWorkingDirectory() {
+        return this.currentWorkingDirectory;
     }
 
 
@@ -842,4 +871,12 @@ class CodeCADApp {
 // Initialize application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new CodeCADApp();
+    
+    // Update document title with version info
+    try {
+        const { VERSION_INFO } = require('../../shared/version.js');
+        document.title = `${VERSION_INFO.name} v${VERSION_INFO.version}`;
+    } catch (error) {
+        console.log('Failed to load version for title:', error);
+    }
 });
